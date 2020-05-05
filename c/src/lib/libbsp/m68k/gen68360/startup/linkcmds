@@ -1,0 +1,105 @@
+/*
+ *  This file contains GNU linker directives for a generic MC68360 board.
+ *
+ * Saskatchewan Accelerator Laboratory
+ * University of Saskatchewan
+ * Saskatoon, Saskatchewan, CANADA
+ * eric@skatter.usask.ca
+ * 
+ *  $Id$
+ */
+
+/*
+ * Declare on-board memory
+ */
+MEMORY {
+          ram : ORIGIN = 0x00000000, LENGTH = 4M
+          rom : ORIGIN = 0xFF000000, LENGTH = 1M
+        dpram : ORIGIN = 0xFE000000, LENGTH = 8k
+}
+
+/*
+ * Declare some sizes
+ * XXX: The assignment of ". += XyzSize;" fails in older gld's if the
+ *      number used there is not constant.  If this happens to you, edit
+ *      the lines marked below to use a constant value.
+ */
+HeapSize = DEFINED(HeapSize) ? HeapSize : 0x10000;
+StackSize = DEFINED(StackSize) ? StackSize : 0x1000;
+
+/*
+ * Declare low-order three octets of Ethernet address
+ */
+ETHERNET_ADDRESS = DEFINED(ETHERNET_ADDRESS) ? ETHERNET_ADDRESS : 0xDEAD12;
+
+/*
+ * Load objects
+ */
+SECTIONS {
+        /*
+         * Boot PROM
+         */
+        rom : {
+                _RomBase = .;
+                __RomBase = .;
+        } >rom
+
+        /*
+         * Dynamic RAM
+         */
+        ram : {
+                _RamBase = .;
+                __RamBase = .;
+        } >ram
+
+        /*
+         * Text, data and bss segments
+         */
+        .text : {
+                CREATE_OBJECT_SYMBOLS
+                *(.text)
+                . = ALIGN (16);
+                etext = .;
+                _etext = .;
+        } >ram 
+        .data : {
+                copy_start = .;
+                *(.data)
+                . = ALIGN (16);
+                _edata = .;
+                copy_end = .;
+        } >ram
+        .bss : {
+                M68Kvec = .;
+                _M68Kvec = .;
+                . += (256 * 4);
+                clear_start = .;
+                *(.bss)
+                *(COMMON)
+                . = ALIGN (16);
+                _end = .;
+
+                _HeapStart = .;
+                __HeapStart = .;
+                . += HeapSize;  /* XXX -- Old gld can't handle this */
+                . += StackSize; /* XXX -- Old gld can't handle this */
+                /* . += 0x10000; */ /* HeapSize for old gld */
+                /* . += 0x1000;  */ /* StackSize for old gld */
+                . = ALIGN (16);
+                stack_init = .;
+                clear_end = .;
+
+                _WorkspaceBase = .;
+                __WorkspaceBase = .;
+        } >ram
+
+        /*
+         * On-chip memory/peripherals
+         */
+        dpram : {
+                m360 = .;
+                _m360 = .;
+                . += (8 * 1024);
+
+        } >dpram
+}
