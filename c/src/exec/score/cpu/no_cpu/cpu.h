@@ -3,13 +3,13 @@
  *  This include file contains information pertaining to the XXX
  *  processor.
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -21,7 +21,7 @@
 extern "C" {
 #endif
 
-#include <rtems/score/no_cpu.h>               /* pick up machine definitions */
+#include <rtems/score/no_cpu.h>            /* pick up machine definitions */
 #ifndef ASM
 #include <rtems/score/no_cputypes.h>
 #endif
@@ -121,6 +121,14 @@ extern "C" {
  */
 
 #define CPU_ALLOCATE_INTERRUPT_STACK TRUE
+
+/*
+ *  Does the RTEMS invoke the user's ISR with the vector number and
+ *  a pointer to the saved interrupt frame (1) or just the vector 
+ *  number (0)?
+ */
+
+#define CPU_ISR_PASSES_FRAME_POINTER 0
 
 /*
  *  Does the CPU have hardware floating point?
@@ -260,6 +268,15 @@ extern "C" {
 #define CPU_STRUCTURE_ALIGNMENT
 
 /*
+ *  Define what is required to specify how the network to host conversion
+ *  routines are handled.
+ */
+
+#define CPU_CPU_HAS_OWN_HOST_TO_NETWORK_ROUTINES FALSE
+#define CPU_BIG_ENDIAN                           TRUE
+#define CPU_LITTLE_ENDIAN                        FALSE
+
+/*
  *  The following defines the number of bits actually used in the
  *  interrupt field of the task mode.  How those bits map to the
  *  CPU interrupt levels is defined by the routine _CPU_ISR_Set_level().
@@ -336,6 +353,7 @@ typedef struct {
   void       (*postdriver_hook)( void );
   void       (*idle_task)( void );
   boolean      do_zero_of_workspace;
+  unsigned32   idle_task_stack_size;
   unsigned32   interrupt_stack_size;
   unsigned32   extra_mpci_receive_server_stack;
   void *     (*stack_allocate_hook)( unsigned32 );
@@ -508,11 +526,15 @@ SCORE_EXTERN void           (*_CPU_Thread_dispatch_pointer)();
  *  8 - 255 would be available for bsp/application specific meaning.
  *  This could be used to manage a programmable interrupt controller
  *  via the rtems_task_mode directive.
+ *
+ *  The get routine usually must be implemented as a subroutine.
  */
 
 #define _CPU_ISR_Set_level( new_level ) \
   { \
   }
+
+unsigned32 _CPU_ISR_Get_level( void );
 
 /* end of ISR handler macros */
 
@@ -781,7 +803,7 @@ void _CPU_Context_switch(
 /*
  *  _CPU_Context_restore
  *
- *  This routine is generallu used only to restart self in an
+ *  This routine is generally used only to restart self in an
  *  efficient manner.  It may simply be a label in _CPU_Context_switch.
  *
  *  NOTE: May be unnecessary to reload some registers.
@@ -845,6 +867,9 @@ static inline unsigned int CPU_swap_u32(
   swapped = (byte1 << 24) | (byte2 << 16) | (byte3 << 8) | byte4;
   return( swapped );
 }
+
+#define CPU_swap_u16( value ) \
+  (((value&0xff) << 8) | ((value >> 8)&0xff))
 
 #ifdef __cplusplus
 }

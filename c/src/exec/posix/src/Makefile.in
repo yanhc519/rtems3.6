@@ -1,0 +1,56 @@
+#
+#  $Id$
+#
+
+@SET_MAKE@
+srcdir = @srcdir@
+VPATH = @srcdir@
+RTEMS_ROOT = @top_srcdir@
+PROJECT_ROOT = @PROJECT_ROOT@
+
+# following are semi-implemented and untested
+# C_PIECES=aio cancel devctl intr mqueue ptimer semaphore time utsname
+
+ENOSYS_C_PIECES=\
+    execl execle execlp execv execve execvp fork \
+    pthreadatfork wait waitpid
+
+C_PIECES= adasupp cond getpid key mutex pthread psignal sched time \
+  types unistd $(ENOSYS_C_PIECES)
+C_FILES=$(C_PIECES:%=%.c)
+C_O_FILES=$(C_PIECES:%=${ARCH}/%.o)
+
+SRCS=$(C_FILES) $(CC_FILES)
+OBJS=$(C_O_FILES) $(CC_O_FILES)
+
+include $(RTEMS_ROOT)/make/custom/$(RTEMS_BSP).cfg
+include $(RTEMS_ROOT)/make/lib.cfg
+
+#
+# Add local stuff here using +=
+#
+
+DEFINES  += -D__RTEMS_INSIDE__
+CPPFLAGS +=
+CFLAGS   += $(CFLAGS_OS_V)
+
+#
+# Add your list of files to delete here.  The config files
+#  already know how to delete some stuff, so you may want
+#  to just run 'make clean' first to see what gets missed.
+#  'make clobber' already includes 'make clean'
+#
+
+CLEAN_ADDITIONS += 
+CLOBBER_ADDITIONS +=
+
+all:	${ARCH} $(SRCS) ${OBJS}
+
+# temporary so we can see how many things are left to implement
+not:
+	grep -i NOT_IMPL $(C_FILES) | grep -v MP_NOT_IMPL
+	@echo
+	@echo
+	@echo
+	@echo `grep -i NOT_IMPL $(C_FILES) | grep -v MP_NOT_IMPL | wc -l ` places marked not implemented
+	@echo `wc -l $(C_FILES) | grep total` lines of C code to test

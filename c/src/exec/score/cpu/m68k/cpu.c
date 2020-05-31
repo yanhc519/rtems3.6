@@ -1,13 +1,13 @@
 /*
  *  Motorola MC68xxx Dependent Source
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -31,6 +31,21 @@ void _CPU_Initialize(
   void      (*thread_dispatch)      /* ignored on this CPU */
 )
 {
+#if ( M68K_HAS_VBR == 0 )
+  /* fill the isr redirect table with the code to place the format/id
+     onto the stack */
+
+  unsigned32 slot;
+
+  for (slot = 0; slot < CPU_INTERRUPT_NUMBER_OF_VECTORS; slot++)
+  {
+    _CPU_ISR_jump_table[slot].move_a7 = M68K_MOVE_A7;
+    _CPU_ISR_jump_table[slot].format_id = slot << 2;
+    _CPU_ISR_jump_table[slot].jmp = M68K_JMP;
+    _CPU_ISR_jump_table[slot].isr_handler = (unsigned32) 0xDEADDEAD;
+  }
+#endif /* M68K_HAS_VBR */
+
   _CPU_Table = *cpu_table;
 }
 
@@ -61,14 +76,32 @@ void _CPU_ISR_install_raw_handler(
 {
   proc_ptr *interrupt_table = NULL;
 
-  m68k_get_vbr( interrupt_table );
+#if (M68K_HAS_FPSP_PACKAGE == 1)
+  /*
+   *  If this vector being installed is one related to FP, then the
+   *  FPSP will install the handler itself and handle it completely
+   *  with no intervention from RTEMS.
+   */
 
-#if ( M68K_HAS_VBR == 1)
+  if (*_FPSP_install_raw_handler &&
+      (*_FPSP_install_raw_handler)(vector, new_handler, *old_handler))
+        return;
+#endif
+
+
+  /*
+   *  On CPU models without a VBR, it is necessary for there to be some
+   *  header code for each ISR which saves a register, loads the vector
+   *  number, and jumps to _ISR_Handler. 
+   */
+
+  m68k_get_vbr( interrupt_table );
   *old_handler = interrupt_table[ vector ];
+#if ( M68K_HAS_VBR == 1 )
   interrupt_table[ vector ] = new_handler;
 #else
-  *old_handler = *(proc_ptr *)( (int)interrupt_table+ (int)vector*6-10);
-  *(proc_ptr *)( (int)interrupt_table+ (int)vector*6-10) = new_handler;
+  _CPU_ISR_jump_table[vector].isr_handler = (unsigned32) new_handler;
+  interrupt_table[ vector ] = (proc_ptr) &_CPU_ISR_jump_table[vector];
 #endif /* M68K_HAS_VBR */
 }
 
@@ -114,8 +147,6 @@ void _CPU_Install_interrupt_stack( void )
   void *isp = _CPU_Interrupt_stack_high;
 
   asm volatile ( "movec %0,%%isp" : "=r" (isp) : "0" (isp) );
-#else
-#warning "FIX ME... HOW DO I INSTALL THE INTERRUPT STACK!!!"
 #endif
 }
 
@@ -142,3 +173,32 @@ const unsigned char __BFFFOtable[256] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 #endif
+
+/*PAGE
+ *
+ *  The following code context switches the software FPU emulation
+ *  code provided with GCC.
+ */
+
+#if (CPU_SOFTWARE_FP == TRUE)
+extern Context_Control_fp _fpCCR;
+
+void CPU_Context_save_fp (void **fp_context_ptr)
+{
+  Context_Control_fp *fp;
+
+  fp = (Context_Control_fp *) *fp_context_ptr;
+
+  *fp = _fpCCR;
+}
+
+void CPU_Context_restore_fp (void **fp_context_ptr)
+{
+  Context_Control_fp *fp;
+
+  fp = (Context_Control_fp *) *fp_context_ptr;
+
+  _fpCCR = *fp;
+}
+#endif
+

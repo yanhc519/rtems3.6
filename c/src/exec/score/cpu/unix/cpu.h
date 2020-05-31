@@ -5,16 +5,9 @@
  *
  *  COPYRIGHT (c) 1994 by Division Incorporated
  *
- *  To anyone who acknowledges that this file is provided "AS IS"
- *  without any express or implied warranty:
- *      permission to use, copy, modify, and distribute this file
- *      for any purpose is hereby granted without fee, provided that
- *      the above copyright notice and this notice appears in all
- *      copies, and that the name of Division Incorporated not be
- *      used in advertising or publicity pertaining to distribution
- *      of the software without specific, written prior permission.
- *      Division Incorporated makes no representations about the
- *      suitability of this software for any purpose.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -26,7 +19,7 @@
 extern "C" {
 #endif
 
-#include <rtems/score/unix.h>
+#include <rtems/score/unix.h>              /* pick up machine definitions */
 #ifndef ASM
 #include <rtems/score/unixtypes.h>
 #endif
@@ -141,6 +134,14 @@ extern "C" {
 #define CPU_ALLOCATE_INTERRUPT_STACK FALSE
 
 /*
+ *  Does the RTEMS invoke the user's ISR with the vector number and
+ *  a pointer to the saved interrupt frame (1) or just the vector 
+ *  number (0)?
+ */
+
+#define CPU_ISR_PASSES_FRAME_POINTER 0
+
+/*
  *  Does the CPU have hardware floating point?
  *
  *  If TRUE, then the RTEMS_FLOATING_POINT task attribute is supported.
@@ -249,9 +250,9 @@ extern "C" {
  *  If FALSE, then the grows toward smaller addresses.
  */
 
-#if defined(hppa1_1)
+#if defined(__hppa__)
 #define CPU_STACK_GROWS_UP               TRUE
-#elif defined(sparc) || defined(i386)
+#elif defined(__sparc__) || defined(__i386__)
 #define CPU_STACK_GROWS_UP               FALSE
 #else
 #error "unknown CPU!!"
@@ -285,6 +286,23 @@ extern "C" {
 #endif
 
 /*
+ *  Define what is required to specify how the network to host conversion
+ *  routines are handled.
+ */
+
+#if defined(__hppa__) || defined(__sparc__)
+#define CPU_CPU_HAS_OWN_HOST_TO_NETWORK_ROUTINES FALSE
+#define CPU_BIG_ENDIAN                           TRUE
+#define CPU_LITTLE_ENDIAN                        FALSE
+#elif defined(__i386__)
+#define CPU_CPU_HAS_OWN_HOST_TO_NETWORK_ROUTINES FALSE
+#define CPU_BIG_ENDIAN                           FALSE
+#define CPU_LITTLE_ENDIAN                        TRUE
+#else
+#error "Unknown CPU!!!"
+#endif
+
+/*
  *  The following defines the number of bits actually used in the
  *  interrupt field of the task mode.  How those bits map to the
  *  CPU interrupt levels is defined by the routine _CPU_ISR_Set_level().
@@ -303,7 +321,7 @@ extern "C" {
 
 /* may need to put some structures here.  */
 
-#if defined(hppa1_1)
+#if defined(__hppa__)
 /*
  * Word indices within a jmp_buf structure
  */
@@ -353,7 +371,7 @@ extern "C" {
 #endif
 #endif
 
-#if defined(i386)
+#if defined(__i386__)
  
 #ifdef RTEMS_NEWLIB
 #error "Newlib not installed"
@@ -364,6 +382,14 @@ extern "C" {
  */
  
 #ifdef RTEMS_UNIXLIB
+#if defined(__FreeBSD__)
+#define RET_OFF    0
+#define EBX_OFF    1
+#define EBP_OFF    2
+#define ESP_OFF    3
+#define ESI_OFF    4
+#define EDI_OFF    5
+#else
 #define EBX_OFF    0
 #define ESI_OFF    1
 #define EDI_OFF    2
@@ -371,10 +397,11 @@ extern "C" {
 #define ESP_OFF    4
 #define RET_OFF    5
 #endif
+#endif
  
 #endif
  
-#if defined(sparc)
+#if defined(__sparc__)
 
 /*
  *  Word indices within a jmp_buf structure
@@ -477,6 +504,7 @@ typedef struct {
   void       (*postdriver_hook)( void );
   void       (*idle_task)( void );
   boolean      do_zero_of_workspace;
+  unsigned32   idle_task_stack_size;
   unsigned32   interrupt_stack_size;
   unsigned32   extra_mpci_receive_server_stack;
   void *     (*stack_allocate_hook)( unsigned32 );
@@ -540,11 +568,11 @@ SCORE_EXTERN void           (*_CPU_Thread_dispatch_pointer)();
  * The size of a frame on the stack
  */
 
-#if defined(hppa1_1)
+#if defined(__hppa__)
 #define CPU_FRAME_SIZE  (32 * 4)
-#elif defined(sparc)
+#elif defined(__sparc__)
 #define CPU_FRAME_SIZE  (112)   /* based on disassembled test code */
-#elif defined(i386)
+#elif defined(__i386__)
 #define CPU_FRAME_SIZE  (24)  /* return address, sp, and bp pushed plus fudge */
 #else
 #error "Unknown CPU!!!"
@@ -650,7 +678,7 @@ void _CPU_ISR_Enable(unsigned32 level);
 
 #define _CPU_ISR_Flash( _level ) \
   do { \
-      register _ignored = 0; \
+      register unsigned32 _ignored = 0; \
       _CPU_ISR_Enable( (_level) ); \
       _CPU_ISR_Disable( _ignored ); \
   } while ( 0 )
@@ -907,7 +935,7 @@ void _CPU_Context_switch(
 /*
  *  _CPU_Context_restore
  *
- *  This routine is generallu used only to restart self in an
+ *  This routine is generally used only to restart self in an
  *  efficient manner.  It may simply be a label in _CPU_Context_switch.
  *
  *  NOTE: May be unnecessary to reload some registers.
@@ -981,9 +1009,38 @@ static inline unsigned int CPU_swap_u32(
   return( swapped );
 }
 
+#define CPU_swap_u16( value ) \
+  (((value&0xff) << 8) | ((value >> 8)&0xff))
+
 /*
  *  Special Purpose Routines to hide the use of UNIX system calls.
  */
+
+
+/*
+ *  Pointer to a sync io  Handler
+ */
+
+typedef void ( *rtems_sync_io_handler )(
+  int fd,
+  boolean read,
+  boolean wrtie,
+  boolean except
+);
+
+/* returns -1 if fd to large, 0 is successful */
+int _CPU_Set_sync_io_handler(
+  int fd,
+  boolean read,
+  boolean write,
+  boolean except,
+  rtems_sync_io_handler handler
+);
+
+/* returns -1 if fd to large, o if successful */
+int _CPU_Clear_sync_io_handler(
+  int fd
+);
 
 int _CPU_Get_clock_vector( void );
 

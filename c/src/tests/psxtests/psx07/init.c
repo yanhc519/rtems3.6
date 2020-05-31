@@ -1,11 +1,11 @@
 /* 
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -103,7 +103,11 @@ void *POSIX_Init(
   status = pthread_create( &Task_id, &attr, Task_1, NULL );
   assert( status == EINVAL );
 
-  attr.stacksize = BSP_Configuration.work_space_size;
+  /* reset all the fields */
+  status = pthread_attr_init( &attr );
+  assert( !status );
+
+  attr.stacksize = BSP_Configuration.work_space_size * 10;
   puts( "Init: pthread_create - EAGAIN (stacksize too large)" );
   status = pthread_create( &Task_id, &attr, Task_1, NULL );
   assert( status == EAGAIN );

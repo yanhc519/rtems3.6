@@ -5,13 +5,13 @@
  *  It jumps to the BSP which is responsible for performing
  *  all initialization.
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -21,7 +21,7 @@
         BEGIN_CODE
         PUBLIC(start)                 # GNU960 default entry point
 
-start:
+SYM(start):
         mov     3, r12
         modpc   r12, r12, r12         # enable tracing/trace faults
         mov     g5, g5                # NOP
@@ -74,14 +74,14 @@ init_frames:
         st      fp, _start_frame
 
         /*
-         * Call application mainline.
+         * Call application boot_card.
          *      Someday, real values of argc and argv will be set up.
          *      For now, they are set to 0.
          */
         ldconst 0,g0
         ldconst 0,g1
         ldconst 0,g2
-        call    _main
+        call    _boot_card
         ret
 
 END_CODE
@@ -89,11 +89,15 @@ END_CODE
          BEGIN_DATA
 
         PUBLIC(_start_frame)
+        PUBLIC(start_frame)
 SYM (_start_frame):
+SYM (start_frame):
         .word   0                  # addr of first user frame: for gdb960
 
-SYM (_stack_start):
         PUBLIC(_stack_start)
+        PUBLIC(stack_start)
+SYM (_stack_start):
+SYM (stack_start):
         .word   0                  # addr of first user frame: for gdb960
 
 END_DATA

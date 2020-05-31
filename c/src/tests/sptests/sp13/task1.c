@@ -7,13 +7,13 @@
  *
  *  Output parameters:  NONE
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -198,6 +198,10 @@ rtems_test_pause();
   status = rtems_message_queue_delete( Queue_id[ 2 ] );
   directive_failed( status, "rtems_message_queue_delete" );
 
+  puts( "TA1 - rtems_message_queue_get_number_pending - SUCCESSFUL\n" );
+  status = rtems_message_queue_get_number_pending( Queue_id[ 3 ], &count );
+  printf( "TA1 - %d messages are pending on Q 3\n", count );
+
   puts( "TA1 - rtems_message_queue_flush - empty Q 3" );
   status = rtems_message_queue_flush( Queue_id[ 3 ], &count );
   printf( "TA1 - %d messages were flushed from Q 3\n", count );
@@ -211,6 +215,10 @@ rtems_test_pause();
   puts( "TA1 - rtems_message_queue_send - BUFFER 2 TO Q 3" );
   status = rtems_message_queue_send( Queue_id[ 3 ], buffer, 16 );
   directive_failed( status, "rtems_message_queue_send" );
+
+  puts( "TA1 - rtems_message_queue_get_number_pending - SUCCESSFUL\n" );
+  status = rtems_message_queue_get_number_pending( Queue_id[ 3 ], &count );
+  printf( "TA1 - %d messages are pending on Q 3\n", count );
 
   Fill_buffer( "BUFFER 3 TO Q 3", buffer );
   puts( "TA1 - rtems_message_queue_send - BUFFER 3 TO Q 3" );

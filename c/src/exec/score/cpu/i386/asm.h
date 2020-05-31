@@ -17,7 +17,7 @@
  *  notice.  This file is freely distributable as long as the source
  *  of the file is noted.  This file is:
  *
- *  COPYRIGHT (c) 1994.
+ *  COPYRIGHT (c) 1994-1997.
  *  On-Line Applications Research Corporation (OAR).
  *
  *  $Id$
@@ -30,7 +30,10 @@
  *  Indicate we are in an assembly file and get the basic CPU definitions.
  */
 
+#ifndef ASM
 #define ASM
+#endif
+#include <rtems/score/targopts.h>
 #include <rtems/score/i386.h>
 
 /*
@@ -89,6 +92,7 @@
 #define edi REG (edi)
 #define esp REG (esp)
 #define ebp REG (ebp)
+#define cr0 REG (cr0)
 
 #define ax REG (ax)
 #define bx REG (bx)
@@ -100,7 +104,14 @@
 #define bp REG (bp)
 
 #define ah REG (ah)
+#define bh REG (bh)
+#define ch REG (ch)
+#define dh REG (dh)
+
 #define al REG (al)
+#define bl REG (bl)
+#define cl REG (cl)
+#define dl REG (dl)
 
 #define cs REG (cs)
 #define ds REG (ds)
@@ -120,9 +131,9 @@
 #define END_DATA_DCL
 #define BEGIN_CODE .text
 #define END_CODE
-#define BEGIN_DATA
+#define BEGIN_DATA .data
 #define END_DATA
-#define BEGIN_BSS
+#define BEGIN_BSS .bss
 #define END_BSS
 #define END
 

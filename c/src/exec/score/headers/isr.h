@@ -5,13 +5,13 @@
  *  supports interrupt critical sections, vectoring of user interrupt
  *  handlers, nesting of interrupts, and manipulating interrupt levels.
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -46,9 +46,16 @@ typedef void ISR_Handler;
  *  Pointer to an ISR Handler
  */
 
+#if (CPU_ISR_PASSES_FRAME_POINTER == 1)
+typedef ISR_Handler ( *ISR_Handler_entry )(
+                 ISR_Vector_number,
+                 CPU_Interrupt_frame *
+             );
+#else
 typedef ISR_Handler ( *ISR_Handler_entry )(
                  ISR_Vector_number
              );
+#endif
 /*
  *  This constant promotes out the number of vectors truly supported by
  *  the current CPU being used.  This is usually the number of distinct vectors

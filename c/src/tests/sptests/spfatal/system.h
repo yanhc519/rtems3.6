@@ -3,13 +3,13 @@
  *  This include file contains information that is included in every
  *  function in the test set.
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -29,8 +29,8 @@ void put_error(
  
 rtems_extension Fatal_extension(
   rtems_unsigned32 source,
-  rtems_unsigned32 error,
-  boolean          is_internal
+  boolean          is_internal,
+  rtems_unsigned32 error
 );
  
 rtems_task Task_1(
@@ -41,18 +41,17 @@ rtems_task Task_1(
 
 extern rtems_extensions_table initial_extensions;
 
-#ifdef TEST_INIT
-rtems_extensions_table initial_extensions = {
-    NULL,                    /* create */
-    NULL,                    /* start */
-    NULL,                    /* restart */
-    NULL,                    /* delete */
-    NULL,                    /* switch */
-    NULL,                    /* begin */
-    NULL,                    /* exitted */
-    Fatal_extension          /* fatal */
-};
-#endif
+#define CONFIGURE_INITIAL_EXTENSIONS \
+  { \
+    NULL,                    /* create  */ \
+    NULL,                    /* start   */ \
+    NULL,                    /* restart */ \
+    NULL,                    /* delete  */ \
+    NULL,                    /* switch  */ \
+    NULL,                    /* begin   */ \
+    NULL,                    /* exitted */ \
+    Fatal_extension          /* fatal   */ \
+  }
 
 #define CONFIGURE_SPTEST
 
@@ -61,8 +60,6 @@ rtems_extensions_table initial_extensions = {
 
 #define CONFIGURE_MICROSECONDS_PER_TICK RTEMS_MILLISECONDS_TO_MICROSECONDS(0)
 #define CONFIGURE_TICKS_PER_TIMESLICE   0
-
-#define CONFIGURE_INITIAL_EXTENSIONS    &initial_extensions
 
 #define CONFIGURE_RTEMS_INIT_TASKS_TABLE
 

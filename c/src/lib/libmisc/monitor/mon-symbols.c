@@ -11,14 +11,20 @@
  *  $Id$
  */
 
+/* for strcasecmp in linux and solaris */
+#if defined(__linux__)
+#include <features.h>
+#define __USE_BSD
+#endif
+#include <string.h>
+
 #define __RTEMS_VIOLATE_KERNEL_VISIBILITY__
 #include <rtems.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
-#include "monitor.h"
-#include "symbols.h"
+#include <rtems/monitor.h>
+#include <rtems/symbols.h>
 
 
 rtems_symbol_table_t *
@@ -231,7 +237,7 @@ rtems_symbol_value_lookup_exact(
     rtems_unsigned32      value
   )
 {
-    int s;
+    rtems_unsigned32 s;
     rtems_symbol_t *sp;
 
     if (table == 0)
@@ -271,7 +277,7 @@ rtems_symbol_name_lookup(
     char                 *name
   )
 {
-    int s;
+    rtems_unsigned32 s;
     rtems_symbol_t *sp;
 
     if (table == 0)
@@ -298,7 +304,7 @@ rtems_monitor_symbol_next(
 )
 {
     rtems_symbol_table_t *table;
-    int n = rtems_get_index(*next_id);
+    rtems_unsigned32 n = rtems_get_index(*next_id);
 
     table = *(rtems_symbol_table_t **) object_info;
     if (table == 0)
@@ -415,7 +421,7 @@ rtems_monitor_symbol_dump_all(
     boolean               verbose
 )
 {
-    int s;
+    rtems_unsigned32 s;
     rtems_symbol_t *sp;
 
     if (table == 0)

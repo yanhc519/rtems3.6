@@ -3,13 +3,13 @@
  *  This include file contains all the constants and structures associated
  *  with the Time of Day Handler.
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -145,7 +145,7 @@ const unsigned16 _TOD_Days_to_date[2][13] = {
  *  year otherwise.
  */
 
-const unsigned16 _TOD_Days_since_last_leap_year[4] = { 0, 366, 761, 1126 };
+const unsigned16 _TOD_Days_since_last_leap_year[4] = { 0, 366, 731, 1096 };
 
 #else
 
@@ -234,6 +234,21 @@ void _TOD_Tickle(
  */
 
 #define TOD_MILLISECONDS_TO_MICROSECONDS(_ms) ((_ms) * 1000)
+
+/*
+ *  TOD_MICROSECONDS_TO_TICKS
+ *
+ *  DESCRIPTION:
+ *
+ *  This routine converts an interval expressed in microseconds to ticks.
+ *
+ *  NOTE:
+ *
+ *  This must be a macro so it can be used in "static" tables.
+ */
+
+#define TOD_MICROSECONDS_TO_TICKS(_us) \
+    ((_us) / _TOD_Microseconds_per_tick)
 
 /*
  *  TOD_MILLISECONDS_TO_TICKS

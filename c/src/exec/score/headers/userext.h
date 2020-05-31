@@ -4,13 +4,13 @@
  *  Handler provides mechanisms which can be used to initialize and manipulate
  *  all user extensions.
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -60,6 +60,11 @@ typedef User_extensions_routine ( *User_extensions_thread_switch_extension )(
                  Thread_Control *
              );
  
+typedef User_extensions_routine (
+                                *User_extensions_thread_post_switch_extension )(
+                 Thread_Control *
+             );
+ 
 typedef User_extensions_routine ( *User_extensions_thread_begin_extension )(
                  Thread_Control *
              );
@@ -94,13 +99,6 @@ typedef struct {
   Chain_Node              Node;
   User_extensions_Table   Callouts;
 }   User_extensions_Control;
-
-/*
- *  The following contains the static extension set which may be
- *  configured by the application.
- */
-
-SCORE_EXTERN User_extensions_Control _User_extensions_Initial;
 
 /*
  *  The following is used to manage the list of active extensions.

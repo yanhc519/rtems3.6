@@ -4,20 +4,20 @@
  *
  *  XXX : put yours in here
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
 /* @(#)bsp.h       03/15/96     1.1 */
 
-#ifndef __NO_BSP_h
-#define __NO_BSP_h
+#ifndef __P4000_BSP_h
+#define __P4000_BSP_h
 
 #ifdef __cplusplus
 extern "C" {
@@ -102,17 +102,9 @@ extern rtems_configuration_table BSP_Configuration;
  * NOTE: Use the standard Clock driver entry
  */
 
-/*
- * How many libio files we want
- */
+/* miscellaneous stuff assumed to exist */
 
-#define BSP_LIBIO_MAX_FDS       20
-
-/* functions */
-
-void bsp_cleanup( void );
-
-mips_isr_entry set_vector(                    /* returns old vector */
+mips_isr_entry set_vector(                      /* returns old vector */
   rtems_isr_entry     handler,                  /* isr routine        */
   rtems_vector_number vector,                   /* vector number      */
   int                 type                      /* RTEMS or RAW intr  */

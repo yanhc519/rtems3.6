@@ -2,13 +2,13 @@
  *
  *  This include file contains all MVME162fx board IO definitions.
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  Modifications of respective RTEMS file: COPYRIGHT (c) 1994.
  *  EISCAT Scientific Association. M.Savitski
@@ -54,7 +54,7 @@ extern "C" {
  * ----------------------------------
  */
 
-typedef volatile struct lcsr_regs {
+typedef volatile struct {
   unsigned long     slave_adr[2];
   unsigned long     slave_trn[2];
   unsigned long     slave_ctl;
@@ -86,7 +86,7 @@ typedef volatile struct lcsr_regs {
 
 #define lcsr      ((lcsr_regs * const) 0xFFF40000)
 
-typedef volatile struct mcchip_regs {
+typedef volatile struct {
 
   unsigned char     chipID;
   unsigned char     chipREV;
@@ -184,7 +184,7 @@ void char_put(int port, char ch);
 #define RX_DATA_AVAILABLE 0x01
 #define SCC_VECTOR        0x40
 
-typedef volatile struct scc_regs {
+typedef volatile struct {
   unsigned char pad1;
   volatile unsigned char          csr;
   unsigned char pad2;
@@ -209,7 +209,7 @@ typedef volatile struct scc_regs {
  * IO space and respond to address modifier codes $29 and $2D.
  * On FORCE CPU use address gcsr_vme and device /dev/vme16d32.
 */
-typedef volatile struct gcsr_regs {
+typedef volatile struct {
   unsigned char       chip_revision;
   unsigned char       chip_id;
   unsigned char       lmsig;
@@ -269,12 +269,6 @@ typedef volatile struct gcsr_regs {
 /*
  * NOTE: Use the standard Clock driver entry
  */
-
-/*
- * How many libio files we want
- */
-
-#define BSP_LIBIO_MAX_FDS       20
 
 /* miscellaneous stuff assumed to exist */
 

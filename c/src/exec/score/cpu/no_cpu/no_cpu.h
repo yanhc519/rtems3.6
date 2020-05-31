@@ -4,12 +4,12 @@
  *  created for each CPU family port of RTEMS.
  *
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  *
@@ -21,28 +21,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/*
- *  The following define the CPU Family and Model within the family
- *
- *  NOTE: The string "REPLACE_THIS_WITH_THE_CPU_MODEL" is replaced
- *        with the name of the appropriate macro for this target CPU.
- */
- 
-#ifdef no_cpu
-#undef no_cpu
-#endif
-#define no_cpu
-
-#ifdef REPLACE_THIS_WITH_THE_CPU_MODEL
-#undef REPLACE_THIS_WITH_THE_CPU_MODEL
-#endif
-#define REPLACE_THIS_WITH_THE_CPU_MODEL
- 
-#ifdef REPLACE_THIS_WITH_THE_BSP
-#undef REPLACE_THIS_WITH_THE_BSP
-#endif
-#define REPLACE_THIS_WITH_THE_BSP
 
 /*
  *  This file contains the information required to build

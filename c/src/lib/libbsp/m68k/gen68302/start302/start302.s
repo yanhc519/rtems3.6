@@ -5,13 +5,13 @@
  *  It jumps to the BSP which is responsible for performing
  *  all initialization.
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -216,7 +216,7 @@ loop:   movel   d0,a1@+                | to zero out uninitialized
         movel   d0,a6                 | set base pointer
 
       /*
-       *  RTEMS should maintiain a separate interrupt stack on CPUs
+       *  RTEMS should maintain a separate interrupt stack on CPUs
        *  without one in hardware.  This is currently not supported
        *  on versions of the m68k without a HW intr stack.
        */
@@ -229,7 +229,7 @@ loop:   movel   d0,a1@+                | to zero out uninitialized
         move.l  #0,a7@-               | environp
         move.l  #0,a7@-               | argv
         move.l  #0,a7@-               | argc
-        jsr     SYM (main)
+        jsr     SYM (boot_card)
 
 	nop
 Bad:	bra	Bad

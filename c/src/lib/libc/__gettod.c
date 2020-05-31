@@ -1,30 +1,41 @@
+#define __RTEMS_VIOLATE_KERNEL_VISIBILITY__
+
+#include <rtems.h>
+
 #if !defined(RTEMS_UNIX)
 /*
  *  RTEMS gettimeofday Implementation
  *
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
-
-#include <rtems.h>
 
 #ifdef RTEMS_NEWLIB
 #include <sys/reent.h>
 #endif
 
-#include <time.h>
 #include <sys/time.h>
+#include <time.h>
 
 #include <errno.h>
 #include <assert.h>
+
+/*
+ *  Seconds from January 1, 1970 to January 1, 1988.  Used to account for
+ *  differences between POSIX API and RTEMS core.
+ */
+
+#define POSIX_TIME_SECONDS_1970_THROUGH_1988 \
+  (((1987 - 1970 + 1)  * TOD_SECONDS_PER_NON_LEAP_YEAR) + \
+  (4 * TOD_SECONDS_PER_DAY))
 
 /*
  *  NOTE:  The solaris gettimeofday does not have a second parameter.
@@ -35,23 +46,29 @@ int gettimeofday(
   struct timezone *tzp
 )
 {
-  rtems_status_code      status;
-  rtems_clock_time_value time;
+  rtems_interrupt_level level;
+  rtems_unsigned32      seconds;
+  rtems_unsigned32      microseconds;
 
   if ( !tp ) {
     errno = EFAULT;
     return -1;
   }
 
-  /* "POSIX" does not seem to allow for not having a TOD */
-  status = rtems_clock_get( RTEMS_CLOCK_GET_TIME_VALUE, &time );
-  if ( status != RTEMS_SUCCESSFUL ) {
-    assert( 0 );
-    return -1;
-  }
+  /*
+   *  POSIX does not seem to allow for not having a TOD so we just
+   *  grab the time of day.
+   *
+   *  NOTE: XXX this routine should really be in the executive proper.
+   */
+  
+  rtems_interrupt_disable(level);
+    seconds      = _TOD_Seconds_since_epoch;
+    microseconds = _TOD_Current.ticks;
+  rtems_interrupt_enable(level);
 
-  tp->tv_sec  = time.seconds;
-  tp->tv_usec = time.microseconds;
+  tp->tv_sec  = seconds + POSIX_TIME_SECONDS_1970_THROUGH_1988;
+  tp->tv_usec = microseconds * _TOD_Microseconds_per_tick;
 
   /*
    * newlib does not have timezone and daylight savings time
@@ -71,7 +88,6 @@ int gettimeofday(
 
 #if defined(RTEMS_NEWLIB) 
 
-#if 0
 /*
  *  "Reentrant" version
  */
@@ -84,7 +100,6 @@ int _gettimeofday_r(
 {
   return gettimeofday( tp, tzp );
 }
-#endif
 
 /*
  *  "System call" version 

@@ -1,5 +1,3 @@
-#if !defined(RTEMS_UNIX)
-
 /*
  *  RTEMS Fake System Calls
  *
@@ -8,13 +6,13 @@
  *  has been implemented in terms of RTEMS services, it should be
  *  taken out of this file.
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  *
@@ -22,29 +20,60 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <assert.h>
+#include <errno.h>
+#include <string.h>
+#include <stdio.h>  /* only for puts */
 
-/*
- *  fstat, stat, and isatty must lie consistently and report that everything
- *  is a tty or stdout will not be line buffered.
- */
+#include <rtems.h>
+#include <rtems/libio.h>
 
-int __fstat(int _fd, struct stat* _sbuf)
+#ifdef RTEMS_NEWLIB
+
+int __rtems_fstat(int _fd, struct stat* _sbuf)
 {
-  _sbuf->st_mode = S_IFCHR;
 #ifdef HAVE_BLKSIZE
   _sbuf->st_blksize = 0;
 #endif
+
+  /*
+   * For now assume stdin/stdout/stderr are always a TTY line
+   *
+   *  From Eric Norum:
+   *
+   *  The `fix' is not complete.  It still doesn't properly handle
+   *  file descriptors for any files/devices other  than the console
+   *  serial lines.....
+   */
+  if (_fd <= 2) {
+    _sbuf->st_mode = S_IFCHR;
+  } else {
+    switch (rtems_file_descriptor_type (_fd)) {
+    case RTEMS_FILE_DESCRIPTOR_TYPE_FILE:
+      _sbuf->st_mode = S_IFREG;
+      break;
+
+    case RTEMS_FILE_DESCRIPTOR_TYPE_SOCKET:
+#if !defined(__GO32__)
+      _sbuf->st_mode = S_IFSOCK;
+      break;
+#endif
+
+    default:
+      puts( "__rtems_fstat -- unknown file descriptor type" );
+      assert( 0 );
+    }
+  }
   return 0;
 }
 
-int __isatty(int _fd)
-{
-  return 1;
-}
-
+#if !defined(RTEMS_UNIX)
 int stat( const char *path, struct stat *buf )
 {
-  return __fstat( 0, buf );
+  if ( strncmp( "/dev/", path, 5 ) ) {
+    return -1;
+  }
+  return __rtems_fstat( 0, buf );
 }
 
 int link( const char *existing, const char *new )
@@ -58,5 +87,13 @@ int unlink( const char *path )
   /* always fail */
   return -1;
 }
+
+char *getcwd( char *_buf, size_t _size)
+{
+/*  assert( FALSE ); */
+  errno = ENOSYS;
+  return 0;
+}
+#endif
 
 #endif

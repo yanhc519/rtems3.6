@@ -21,13 +21,13 @@
  *
  * Output parameters:	NONE
  *
- * COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ * COPYRIGHT (c) 1989-1998.
  * On-Line Applications Research Corporation (OAR).
- * All rights assigned to U.S. Government, 1994.
+ * Copyright assigned to U.S. Government, 1994.
  *
- * This material may be reproduced by or for the U.S. Government pursuant
- * to the copyright license under the clause at DFARS 252.227-7013.  This
- * notice must appear in all copies of this file and its derivatives.
+ * The license and distribution terms for this file may be
+ * found in the file LICENSE in this distribution or at
+ * http://www.OARcorp.com/rtems/license.html.
  */
 
 #include <stdlib.h>			/* for atexit() */
@@ -51,12 +51,34 @@ volatile rtems_unsigned32 Clock_driver_ticks;
 rtems_device_major_number rtems_clock_major = ~0;
 rtems_device_minor_number rtems_clock_minor;
 
+char M360DefaultWatchdogFeeder = 1;
+
 /*
  * Periodic interval timer interrupt handler
  */
+
 rtems_isr
 Clock_isr (rtems_vector_number vector)
 {
+	/*
+	 * Perform a dummy read of DPRAM.
+	 * This works around a bug in Rev. B of the 68360
+	 */
+	m360.dpram0[0];
+
+	/*
+	 * Feed the watchdog
+	 * Application code can override this by
+	 * setting M360DefaultWatchdogFeeder to zero.
+	 */
+	if (M360DefaultWatchdogFeeder) {
+		m360.swsr = 0x55;
+		m360.swsr = 0xAA;
+	}
+
+	/*
+	 * Announce the clock tick
+	 */
 	Clock_driver_ticks++;
 	rtems_clock_tick();
 }

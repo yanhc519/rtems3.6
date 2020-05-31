@@ -2,13 +2,13 @@
  *  RTEMS Task Manager
  *
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -269,15 +269,6 @@ rtems_status_code rtems_task_create(
 #endif
 
   /*
-   *  Validate the RTEMS API priority and convert it to the core priority range.
-   */
-
-  if ( !_RTEMS_tasks_Priority_is_valid( initial_priority ) )
-    return RTEMS_INVALID_PRIORITY;
-
-  core_priority = _RTEMS_tasks_Priority_to_Core( initial_priority );
-
-  /*
    *  Fix the attribute set to match the attributes which
    *  this processor (1) requires and (2) is able to support.
    *  First add in the required flags for attribute_set
@@ -294,6 +285,17 @@ rtems_status_code rtems_task_create(
     is_fp = TRUE;
   else
     is_fp = FALSE;
+
+  /*
+   *  Validate the RTEMS API priority and convert it to the core priority range.
+   */
+
+  if ( !_Attributes_Is_system_task( the_attribute_set ) ) {
+    if ( !_RTEMS_tasks_Priority_is_valid( initial_priority ) )
+      return RTEMS_INVALID_PRIORITY;
+  }
+
+  core_priority = _RTEMS_tasks_Priority_to_Core( initial_priority );
 
   if ( _Attributes_Is_global( the_attribute_set ) ) {
 
@@ -555,6 +557,7 @@ rtems_status_code rtems_task_delete(
 {
   register Thread_Control *the_thread;
   Objects_Locations        location;
+  Objects_Information     *the_information;
 
   the_thread = _Thread_Get( id, &location );
   switch ( location ) {
@@ -564,7 +567,15 @@ rtems_status_code rtems_task_delete(
       _Thread_Dispatch();
       return RTEMS_ILLEGAL_ON_REMOTE_OBJECT;
     case OBJECTS_LOCAL:
-      _Thread_Close( &_RTEMS_tasks_Information, the_thread );
+      the_information = _Objects_Get_information( the_thread->Object.id );
+
+      if ( !the_information ) {
+        _Thread_Enable_dispatch();
+        return RTEMS_INVALID_ID;
+        /* This should never happen if _Thread_Get() works right */
+      }
+  
+      _Thread_Close( the_information, the_thread );
 
       _RTEMS_tasks_Free( the_thread );
 
@@ -736,7 +747,7 @@ rtems_status_code rtems_task_set_priority(
         the_thread->real_priority = new_priority;
         if ( the_thread->resource_count == 0 ||
              the_thread->current_priority > new_priority )
-          _Thread_Change_priority( the_thread, new_priority );
+          _Thread_Change_priority( the_thread, new_priority, FALSE );
       }
       _Thread_Enable_dispatch();
       return RTEMS_SUCCESSFUL;

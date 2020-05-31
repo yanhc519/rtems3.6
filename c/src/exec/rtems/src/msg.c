@@ -2,13 +2,13 @@
  *  Message Queue Manager
  *
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -551,6 +551,56 @@ rtems_status_code rtems_message_queue_flush(
 
 /*PAGE
  *
+ *  rtems_message_queue_get_number_pending
+ *
+ *  This directive returns the number of messages pending.
+ *
+ *  Input parameters:
+ *    id    - queue id
+ *    count - return area for count
+ *
+ *  Output parameters:
+ *    count             - number of messages removed ( 0 = empty queue )
+ *    RTEMS_SUCCESSFUL - if successful
+ *    error code        - if unsuccessful
+ */
+
+rtems_status_code rtems_message_queue_get_number_pending(
+  Objects_Id  id,
+  unsigned32 *count
+)
+{
+  register Message_queue_Control *the_message_queue;
+  Objects_Locations               location;
+
+  the_message_queue = _Message_queue_Get( id, &location );
+  switch ( location ) {
+    case OBJECTS_ERROR:
+      return RTEMS_INVALID_ID;
+    case OBJECTS_REMOTE:
+      _Thread_Executing->Wait.return_argument = count;
+
+      return
+        _Message_queue_MP_Send_request_packet(
+          MESSAGE_QUEUE_MP_GET_NUMBER_PENDING_REQUEST,
+          id,
+          0,                               /* buffer not used */
+          0,                               /* size */
+          0,                               /* option_set not used */
+          MPCI_DEFAULT_TIMEOUT
+        );
+
+    case OBJECTS_LOCAL:
+      *count = the_message_queue->message_queue.number_of_pending_messages;
+      _Thread_Enable_dispatch();
+      return RTEMS_SUCCESSFUL;
+  }
+
+  return RTEMS_INTERNAL_ERROR;   /* unreached - only to remove warnings */
+}
+
+/*PAGE
+ *
  *  _Message_queue_Submit
  *
  *  This routine implements the directives rtems_message_queue_send
@@ -678,7 +728,7 @@ rtems_status_code _Message_queue_Translate_core_message_queue_return_code (
     case CORE_MESSAGE_QUEUE_STATUS_TIMEOUT:
       return RTEMS_TIMEOUT;
     case THREAD_STATUS_PROXY_BLOCKING:
-      return THREAD_STATUS_PROXY_BLOCKING;
+      return RTEMS_PROXY_BLOCKING;
   }
   _Internal_error_Occurred(         /* XXX */
     INTERNAL_ERROR_RTEMS_API,

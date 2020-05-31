@@ -11,22 +11,28 @@
 --  $Id$
 --
 
-This is a README file for the MVME162 port of RTEMS.
+MVME162 Models
+--------------
 
-Disclaimer
-----------
-This is my first attempt at porting RTEMS. The resulting code obviously
-contains bugs (know and unknown) and limitations. I assume no
-responsibility for quality and support of the software in question.
+MVME162 model uses 68040.
 
-Now on more optimistic note:
+MVME162FX model uses XXX.
 
-I have run most of the standard RTEMS sptests, and neither of them
-failed. My present (short) experience of developing RTEMS applications
-is essentially positive and suggestive of a long-term commitment. In
-any case I am ready to answer questions regarding the port and intend
-to follow the future RTEMS versions. I will do my best to provide
-whatever support I can afford time-wise.
+MVME162LX model uses 68LC040.
+
+Do all models have 2 ZCC chips for a total of 4 serial ports?
+
+Extended Console Driver
+-----------------------
+This BSP includes an extended console driver which supports all 4 serial
+ports on the MVME162LX model.  It was submitted by Katsutoshi Shibuya 
+<shibuya@mxb.meshnet.or.jp>.
+
+The application can choose this driver by using "CONSOLEX_DRIVER_TABLE_ENTRY"
+in the driver table definition, in place of "CONSOLE_DRIVER_TABLE_ENTRY".  
+See consolex/cTest.c for an example and consolex/README for more information. 
+
+This driver is only built for the mvme162lx bsp model.
 
 MVME162FX and DMA on the IP bus
 -------------------------------
@@ -54,15 +60,21 @@ standard release.
 
 Port Description
 ----------------
+This section describes the initial port effort.  There have been 
+additions and modifications to the bsp since this was done.
+Interestingly, this was the first bsp submitted to the RTEMS project
+and the submission offer came out of the blue with no prior
+communication with the author. :)
+
 The port was done using already existing ports to the M68020 boards,
 DMV152 and MVME136. 
 
-The host system was SUN/Solaris 2.3, and the cross-development
-environment consisted of Free Software Foundation (FSF)'s GNU C
-compiler (version 2.6), GNU Assembler (version 2.3) and GNU binary
-utilities binutils version 2.5.2, built with m68k as a target. The
-recent/latest versions of other GNU programs (flex, make, etc) were
-also used at the build stage.
+The initial host development system was SUN/Solaris 2.3, and
+the cross-development environment consisted of Free Software
+Foundation (FSF)'s GNU C compiler (version 2.6), GNU Assembler
+(version 2.3) and GNU binary utilities binutils version 2.5.2,
+built with m68k as a target. The recent/latest versions of other
+GNU programs (flex, make, etc) were also used at the build stage.
 
 In all subdirectories of the RTEMS distribution tree, the directories
 mvme136 were duplicated as mvme162.

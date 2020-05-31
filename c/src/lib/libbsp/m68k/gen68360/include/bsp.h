@@ -15,13 +15,13 @@
 
 /*  bsp.h
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  */
 
 #ifndef __GEN68360_BSP_h
@@ -35,6 +35,14 @@ extern "C" {
 #include <console.h>
 #include <iosupp.h>
 #include <clockdrv.h>
+
+/*
+ * Network driver configuration
+ */
+struct rtems_bsdnet_ifconfig;
+extern int rtems_scc1_driver_attach (struct rtems_bsdnet_ifconfig *config);
+#define RTEMS_BSP_NETWORK_DRIVER_NAME	"scc1"
+#define RTEMS_BSP_NETWORK_DRIVER_ATTACH	rtems_scc1_driver_attach
 
 /*
  *  Define the time limits for RTEMS Test Suite test durations.
@@ -82,14 +90,6 @@ extern "C" {
 
 /* Structures */
 
-#ifdef GEN68360_INIT
-#undef EXTERN
-#define EXTERN
-#else
-#undef EXTERN
-#define EXTERN extern
-#endif
-
 /*
  *  Device Driver Table Entries
  */
@@ -102,12 +102,6 @@ extern "C" {
  * NOTE: Use the standard Clock driver entry
  */
 
-/*
- * How many libio files we want
- */
-
-#define BSP_LIBIO_MAX_FDS       20
-
 /* miscellaneous stuff assumed to exist */
 
 extern rtems_configuration_table BSP_Configuration;
@@ -119,12 +113,29 @@ extern m68k_isr_entry M68Kvec[];   /* vector table address */
 void bsp_cleanup( void );
 
 void M360ExecuteRISC( rtems_unsigned16 command );
+void *M360AllocateBufferDescriptors( int count );
+void *M360AllocateRiscTimers( int count );
+extern char M360DefaultWatchdogFeeder;
 
 m68k_isr_entry set_vector(
   rtems_isr_entry     handler,
   rtems_vector_number vector,
   int                 type
 );
+
+/*
+ * Values assigned by link editor
+ */
+extern void *_RomBase, *_RamBase;
+
+/*
+ * Definitions for Atlas Computer Equipment Inc. High Speed Bridge (HSB)
+ */
+#define ATLASHSB_ESR    0x20010000L
+#define ATLASHSB_USICR  0x20010001L
+#define ATLASHSB_DSRR   0x20010002L
+#define ATLASHSB_LED4   0x20010004L
+#define ATLASHSB_ROM_U6 0xFF080000L	/* U6 flash ROM socket */
 
 #ifdef __cplusplus
 }

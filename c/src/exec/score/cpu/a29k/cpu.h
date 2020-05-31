@@ -20,17 +20,17 @@
  *
  *  Derived from c/src/exec/score/cpu/no_cpu/cpu_asm.c:
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
-/* @(#)cpu.h       09/06/96     1.10 */
+/* @(#)cpu.h	10/21/96	1.11 */
 
 #ifndef __CPU_h
 #define __CPU_h
@@ -39,13 +39,15 @@
 extern "C" {
 #endif
 
-#include <rtems/score/a29k.h>               /* pick up machine definitions */
+#include <rtems/score/a29k.h>                /* pick up machine definitions */
 #ifndef ASM
 #include <rtems/score/a29ktypes.h>
 #endif
 
 extern unsigned int a29k_disable( void );
 extern void a29k_enable( unsigned int cookie );
+extern unsigned int a29k_getops( void );
+extern void a29k_getops_sup( void );
 extern void a29k_disable_sup( void );
 extern void a29k_enable_sup( void );
 extern void a29k_disable_all( void );
@@ -156,6 +158,14 @@ extern void a29k_sigdfl_sup(void);
  */
 
 #define CPU_ALLOCATE_INTERRUPT_STACK FALSE
+
+/*
+ *  Does the RTEMS invoke the user's ISR with the vector number and
+ *  a pointer to the saved interrupt frame (1) or just the vector 
+ *  number (0)?
+ */
+
+#define CPU_ISR_PASSES_FRAME_POINTER 0
 
 /*
  *  Does the CPU have hardware floating point?
@@ -293,6 +303,18 @@ extern void a29k_sigdfl_sup(void);
  */
 
 #define CPU_STRUCTURE_ALIGNMENT
+
+/*
+ *  Define what is required to specify how the network to host conversion
+ *  routines are handled.
+ *
+ */
+
+#error "Check these definitions!!!"
+
+#define CPU_CPU_HAS_OWN_HOST_TO_NETWORK_ROUTINES FALSE
+#define CPU_BIG_ENDIAN                           TRUE
+#define CPU_LITTLE_ENDIAN                        FALSE
 
 /*
  *  The following defines the number of bits actually used in the
@@ -434,6 +456,7 @@ typedef struct {
   void       (*postdriver_hook)( void );
   void       (*idle_task)( void );
   boolean      do_zero_of_workspace;
+  unsigned32   idle_task_stack_size;
   unsigned32   interrupt_stack_size;
   unsigned32   extra_system_initialization_stack;
   unsigned32   some_other_cpu_dependent_info;
@@ -655,6 +678,9 @@ extern void _CPU_Context_save(
       (_the_context)->local_count = 1-1;			    \
       (_the_context)->PC1 = _entry_point;                           \
       (_the_context)->PC0 = (unsigned32)((char *)_entry_point + 4); \
+      if (_isr) { (_the_context)->OPS |= (TD | DI); }               \
+      else                                                          \
+                { (_the_context)->OPS &= ~(TD | DI); }              \
   }while(0)
 
 /*
@@ -893,7 +919,7 @@ void _CPU_Context_switch(
 /*
  *  _CPU_Context_restore
  *
- *  This routine is generallu used only to restart self in an
+ *  This routine is generally used only to restart self in an
  *  efficient manner.  It may simply be a label in _CPU_Context_switch.
  *
  *  NOTE: May be unnecessary to reload some registers.
@@ -944,7 +970,11 @@ void _CPU_Context_restore_fp(
  */
  
 #define CPU_swap_u32( value ) \
-  ((value&0xff) << 24) | (((value >> 8)&0xff) << 16) | (((value >> 16)&0xff) << 8) | ((value>>24)&0xff) 
+  ((value&0xff) << 24) | (((value >> 8)&0xff) << 16) | \
+    (((value >> 16)&0xff) << 8) | ((value>>24)&0xff) 
+
+#define CPU_swap_u16( value ) \
+  (((value&0xff) << 8) | ((value >> 8)&0xff))
 
 #ifdef __cplusplus
 }

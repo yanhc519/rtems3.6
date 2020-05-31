@@ -6,13 +6,13 @@
  *  This package is the implementation of the Mutex Handler.
  *  This handler provides synchronization and mutual exclusion capabilities.
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -142,7 +142,8 @@ void _CORE_mutex_Seize(
                                            executing->current_priority ) {
         _Thread_Change_priority(
           the_mutex->holder,
-          the_mutex->Attributes.priority_ceiling
+          the_mutex->Attributes.priority_ceiling,
+          FALSE
         );
       }
     }
@@ -180,7 +181,8 @@ void _CORE_mutex_Seize(
       if ( the_mutex->holder->current_priority > executing->current_priority ) {
         _Thread_Change_priority(
           the_mutex->holder,
-          executing->current_priority
+          executing->current_priority,
+          FALSE
         );
       }
       break;
@@ -199,7 +201,8 @@ void _CORE_mutex_Seize(
                                            executing->current_priority ) {
           _Thread_Change_priority(
             executing,
-            the_mutex->Attributes.priority_ceiling
+            the_mutex->Attributes.priority_ceiling,
+            FALSE
           );
         };
         break;
@@ -237,9 +240,27 @@ CORE_mutex_Status _CORE_mutex_Surrender(
 
   executing = _Thread_Executing;
 
+  /*
+   *  The following code allows a thread (or ISR) other than the thread
+   *  which acquired the mutex to release that mutex.  This is only
+   *  allowed when the mutex in quetion is FIFO or simple Priority
+   *  discipline.  But Priority Ceiling or Priority Inheritance mutexes
+   *  must be released by the thread which acquired them.
+   */ 
+
   if ( !_Objects_Are_ids_equal(
-           _Thread_Executing->Object.id, the_mutex->holder_id ) )
-    return( CORE_MUTEX_STATUS_NOT_OWNER_OF_RESOURCE );
+           _Thread_Executing->Object.id, the_mutex->holder_id ) ) {
+
+    switch ( the_mutex->Attributes.discipline ) {
+      case CORE_MUTEX_DISCIPLINES_FIFO:
+      case CORE_MUTEX_DISCIPLINES_PRIORITY:
+        break;
+      case CORE_MUTEX_DISCIPLINES_PRIORITY_CEILING:
+      case CORE_MUTEX_DISCIPLINES_PRIORITY_INHERIT:
+        return( CORE_MUTEX_STATUS_NOT_OWNER_OF_RESOURCE );
+        break;
+    }
+  }
 
   the_mutex->nest_count--;
 
@@ -262,10 +283,9 @@ CORE_mutex_Status _CORE_mutex_Surrender(
       break;
     case CORE_MUTEX_DISCIPLINES_PRIORITY_CEILING:
     case CORE_MUTEX_DISCIPLINES_PRIORITY_INHERIT:
-      if ( executing->resource_count == 0 &&
-           executing->real_priority !=
-           executing->current_priority ) {
-         _Thread_Change_priority( executing, executing->real_priority );
+      if ( executing->resource_count == 0 && 
+           executing->real_priority != executing->current_priority ) {
+         _Thread_Change_priority( executing, executing->real_priority, TRUE );
       }
       break;
   }

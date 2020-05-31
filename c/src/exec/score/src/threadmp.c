@@ -2,13 +2,13 @@
  *  Multiprocessing Support for the Thread Handler
  *
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -132,7 +132,7 @@ restart:
            !_Chain_Is_tail( &_Thread_MP_Active_proxies, proxy_node ) ;
         ) {
 
-      the_thread = _Addresses_Subtract_offset(
+      the_thread = (Thread_Control *) _Addresses_Subtract_offset(
                      proxy_node,
                      _Thread_MP_Proxy_Active_offset
                    );

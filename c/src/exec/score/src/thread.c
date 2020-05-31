@@ -2,13 +2,13 @@
  *  Thread Handler
  *
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -74,7 +74,7 @@ void _Thread_Handler_initialization(
 
   _Thread_Ticks_per_timeslice  = ticks_per_timeslice;
 
-  _Thread_Ready_chain = _Workspace_Allocate_or_fatal_error(
+  _Thread_Ready_chain = (Chain_Control *) _Workspace_Allocate_or_fatal_error(
     (PRIORITY_MAXIMUM + 1) * sizeof(Chain_Control)
   );
 
@@ -107,7 +107,8 @@ void _Thread_Handler_initialization(
 
 void _Thread_Create_idle( void )
 {
-  void *idle;
+  void       *idle;
+  unsigned32  idle_task_stack_size;
 
   /*
    *  The entire workspace is zeroed during its initialization.  Thus, all
@@ -122,19 +123,23 @@ void _Thread_Create_idle( void )
    */
  
 #if (CPU_PROVIDES_IDLE_THREAD_BODY == TRUE)
-  idle = _CPU_Thread_Idle_body;
+  idle = (void *) _CPU_Thread_Idle_body;
 #else
-  idle = _Thread_Idle_body;
+  idle = (void *) _Thread_Idle_body;
 #endif
  
   if ( _CPU_Table.idle_task )
     idle = _CPU_Table.idle_task;
  
+  idle_task_stack_size =  _CPU_Table.idle_task_stack_size;
+  if ( idle_task_stack_size < STACK_MINIMUM_SIZE )
+    idle_task_stack_size = STACK_MINIMUM_SIZE;
+ 
   _Thread_Initialize(
     &_Thread_Internal_information,
     _Thread_Idle,
     NULL,        /* allocate the stack */
-    THREAD_IDLE_STACK_SIZE,
+    idle_task_stack_size,
     CPU_IDLE_TASK_IS_FP,
     PRIORITY_MAXIMUM,
     TRUE,        /* preemptable */
@@ -212,7 +217,7 @@ void _Thread_Start_multitasking( void )
     */
  
 
-#if ( CPU_HARDWARE_FP == TRUE )
+#if ( CPU_HARDWARE_FP == TRUE ) || ( CPU_SOFTWARE_FP == TRUE )
    /*
     *  don't need to worry about saving BSP's floating point state
     */
@@ -267,6 +272,8 @@ void _Thread_Dispatch( void )
     _Context_Switch_necessary = FALSE;
     _Thread_Executing = heir;
     _ISR_Enable( level );
+
+    heir->ticks_executed++;
 
     _User_extensions_Thread_switch( executing, heir );
 
@@ -435,22 +442,18 @@ boolean _Thread_Initialize(
    */
 
 
-  if ( !stack ) {
+  if ( !stack_area ) {
     if ( !_Stack_Is_enough( stack_size ) )
       actual_stack_size = STACK_MINIMUM_SIZE;
     else
       actual_stack_size = stack_size;
 
-    actual_stack_size = _Stack_Adjust_size( actual_stack_size );
-    stack             = stack_area;
-
-    actual_stack_size = _Thread_Stack_Allocate( the_thread, stack_size );
+    actual_stack_size = _Thread_Stack_Allocate( the_thread, actual_stack_size );
  
     if ( !actual_stack_size ) 
       return FALSE;                     /* stack allocation failed */
 
     stack = the_thread->Start.stack;
-
     the_thread->Start.core_allocated_stack = TRUE;
   } else {
     stack = stack_area;
@@ -503,7 +506,7 @@ boolean _Thread_Initialize(
   } else 
     extensions_area = NULL;
   
-  the_thread->extensions = extensions_area;
+  the_thread->extensions = (void **) extensions_area;
 
   /*
    *  General initialization
@@ -518,6 +521,7 @@ boolean _Thread_Initialize(
   the_thread->resource_count         = 0;
   the_thread->real_priority          = priority;
   the_thread->Start.initial_priority = priority;
+  the_thread->ticks_executed         = 0;
  
   _Thread_Set_priority( the_thread, priority );
 
@@ -539,7 +543,7 @@ boolean _Thread_Initialize(
     if ( fp_area )
       (void) _Workspace_Free( fp_area );
 
-    _Thread_Stack_Free( the_thread->Start.stack );
+    _Thread_Stack_Free( the_thread );
 
     return FALSE;
   }
@@ -566,7 +570,7 @@ boolean _Thread_Start(
 {
   if ( _States_Is_dormant( the_thread->current_state ) ) {
  
-    the_thread->Start.entry_point      = entry_point;
+    the_thread->Start.entry_point      = (Thread_Entry) entry_point;
    
     the_thread->Start.prototype        = the_prototype;
     the_thread->Start.pointer_argument = pointer_argument;
@@ -945,11 +949,26 @@ void _Thread_Tickle_timeslice( void )
 
   executing = _Thread_Executing;
 
+  /*
+   *  Increment the number of ticks this thread has been executing
+   */
+
+  executing->ticks_executed++;
+
+  /*
+   *  If the thread is not preemptible or is not ready, then 
+   *  just return.
+   */
+
   if ( !executing->is_preemptible )
     return;
 
   if ( !_States_Is_ready( executing->current_state ) )
     return;
+
+  /*
+   *  The cpu budget algorithm determines what happens next.
+   */
 
   switch ( executing->budget_algorithm ) {
     case THREAD_CPU_BUDGET_ALGORITHM_NONE:
@@ -1115,19 +1134,23 @@ void _Thread_Handler( void )
  
   switch ( executing->Start.prototype ) {
     case THREAD_START_NUMERIC:
-      (*executing->Start.entry_point)( executing->Start.numeric_argument );
+      (*(Thread_Entry_numeric) executing->Start.entry_point)(
+        executing->Start.numeric_argument
+      );
       break;
     case THREAD_START_POINTER:
-      (*executing->Start.entry_point)( executing->Start.pointer_argument );
+      (*(Thread_Entry_pointer) executing->Start.entry_point)(
+        executing->Start.pointer_argument
+      );
       break;
     case THREAD_START_BOTH_POINTER_FIRST:
-      (*executing->Start.entry_point)( 
+      (*(Thread_Entry_both_pointer_first) executing->Start.entry_point)( 
         executing->Start.pointer_argument,
         executing->Start.numeric_argument
       );
       break;
     case THREAD_START_BOTH_NUMERIC_FIRST:
-      (*executing->Start.entry_point)( 
+      (*(Thread_Entry_both_numeric_first) executing->Start.entry_point)( 
         executing->Start.numeric_argument,
         executing->Start.pointer_argument
       );
@@ -1186,6 +1209,7 @@ void _Thread_Delay_ended(
  *  Input parameters:
  *    the_thread   - pointer to thread control block
  *    new_priority - ultimate priority
+ *    prepend_it   - TRUE if the thread should be prepended to the chain
  *
  *  Output parameters:  NONE
  *
@@ -1196,11 +1220,35 @@ void _Thread_Delay_ended(
 
 void _Thread_Change_priority(
   Thread_Control   *the_thread,
-  Priority_Control  new_priority
+  Priority_Control  new_priority,
+  boolean           prepend_it
 )
 {
   ISR_Level level;
+  /* boolean   do_prepend = FALSE; */
 
+  /*
+   *  If this is a case where prepending the task to its priority is
+   *  potentially desired, then we need to consider whether to do it.
+   *  This usually occurs when a task lowers its priority implcitly as
+   *  the result of losing inherited priority.  Normal explicit priority
+   *  change calls (e.g. rtems_task_set_priority) should always do an
+   *  append not a prepend.
+   */
+ 
+  /*
+   *  Techically, the prepend should conditional on the thread lowering
+   *  its priority but that does allow cxd2004 of the acvc 2.0.1 to 
+   *  pass with rtems 4.0.0.  This should change when gnat redoes its
+   *  priority scheme.
+   */
+/*
+  if ( prepend_it &&
+       _Thread_Is_executing( the_thread ) && 
+       new_priority >= the_thread->current_priority )
+    prepend_it = TRUE;
+*/
+                  
   _Thread_Set_transient( the_thread );
 
   if ( the_thread->current_priority != new_priority )
@@ -1217,7 +1265,10 @@ void _Thread_Change_priority(
   }
 
   _Priority_Add_to_bit_map( &the_thread->Priority_map );
-  _Chain_Append_unprotected( the_thread->ready, &the_thread->Object.Node );
+  if ( prepend_it )
+    _Chain_Prepend_unprotected( the_thread->ready, &the_thread->Object.Node );
+  else
+    _Chain_Append_unprotected( the_thread->ready, &the_thread->Object.Node );
 
   _ISR_Flash( level );
 
@@ -1226,7 +1277,6 @@ void _Thread_Change_priority(
   if ( !_Thread_Is_executing_also_the_heir() &&
        _Thread_Executing->is_preemptible )
     _Context_Switch_necessary = TRUE;
-
   _ISR_Enable( level );
 }
 

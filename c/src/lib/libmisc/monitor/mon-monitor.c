@@ -29,7 +29,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "monitor.h"
+#include <rtems/monitor.h>
 
 /* set by trap handler */
 extern rtems_tcb       *debugger_interrupted_task;
@@ -483,7 +483,7 @@ rtems_monitor_init(
 
     status = rtems_task_create(RTEMS_MONITOR_NAME,
                                1,
-                               0 /* default stack */,
+                               RTEMS_MINIMUM_STACK_SIZE * 2,
                                RTEMS_INTERRUPT_LEVEL(0),
                                RTEMS_DEFAULT_ATTRIBUTES,
                                &rtems_monitor_task_id);

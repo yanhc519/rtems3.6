@@ -10,6 +10,8 @@
  *  NOTE: The spacing in the use of these macros
  *        is critical to them working as advertised.
  *
+ *  !!! THIS FILE DOES NOT APPEAR TO HAVE BEEN USED IN THE 29K PORT !!!
+ *
  *  COPYRIGHT:
  *
  *  This file is based on similar code found in newlib available
@@ -17,21 +19,24 @@
  *  notice.  This file is freely distributable as long as the source
  *  of the file is noted.  This file is:
  *
- *  COPYRIGHT (c) 1994.
+ *  COPYRIGHT (c) 1989-1997
  *  On-Line Applications Research Corporation (OAR).
  *
  *  $Id$
  */
 
-#ifndef __NO_CPU_ASM_h
-#define __NO_CPU_ASM_h
+#ifndef __A29K_ASM_h
+#define __A29K_ASM_h
 
 /*
  *  Indicate we are in an assembly file and get the basic CPU definitions.
  */
 
+#ifndef ASM
 #define ASM
-#include <rtems/score/no_cpu.h>
+#endif
+#include <rtems/score/targopts.h>
+#include <rtems/score/asm.h>
 
 /*
  *  Recent versions of GNU cpp define variables which indicate the

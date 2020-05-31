@@ -3,13 +3,13 @@
  *  This include file contains the static inline implementation of all
  *  of the inlined routines in the Object Handler.
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -101,7 +101,7 @@ RTEMS_INLINE_ROUTINE boolean _Objects_Is_class_valid(
   Objects_Classes the_class
 )
 {
-  return the_class <= OBJECTS_CLASSES_LAST;
+  return the_class && the_class <= OBJECTS_CLASSES_LAST;
 }
 
 /*PAGE
@@ -236,7 +236,7 @@ RTEMS_INLINE_ROUTINE void _Objects_Close(
   unsigned32 index;
 
   index = _Objects_Get_index( the_object->id );
-  information->local_table[ index ] = NULL;
+  information->local_table[ index ] = (Objects_Control *) NULL;
   _Objects_Clear_name( the_object->name, information->name_length );
 }
 

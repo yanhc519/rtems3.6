@@ -1,13 +1,13 @@
 /*
  *  This routine returns control to 162Bug.
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *
  *  Modifications of respective RTEMS file: COPYRIGHT (c) 1994.
@@ -22,7 +22,8 @@
 
 #include <rtems.h>
 #include <bsp.h>
-#include <z8036.h>
+#include <zilog/z8036.h>
+#include <page_table.h>
 
 void bsp_return_to_monitor_trap()
 {
@@ -31,7 +32,12 @@ void bsp_return_to_monitor_trap()
   page_table_teardown();
 
   lcsr->intr_ena = 0;               /* disable interrupts */
+#if defined(mvme162lx)
+  m68k_set_vbr(0x00000000);         /* restore 162Bug vectors */
+#else
   m68k_set_vbr(0xFFE00000);         /* restore 162Bug vectors */
+#endif
+
   asm volatile( "trap   #15"  );    /* trap to 162Bug */
   asm volatile( ".short 0x63" );    /* return to 162Bug (.RETURN) */
                                     /* restart program */

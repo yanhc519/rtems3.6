@@ -1,13 +1,13 @@
 /*
  *  This file contains the MVME162 console IO package.
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  Modifications of respective RTEMS file: COPYRIGHT (c) 1994.
  *  EISCAT Scientific Association. M.Savitski
@@ -25,7 +25,7 @@
 #include <rtems/libio.h>
 #include <ringbuf.h>
 
-Ring_buffer_t  Buffer[2];
+Ring_buffer_t  Console_Buffer[2];
 
 /*
  *  Interrupt handler for receiver interrupts
@@ -43,7 +43,7 @@ rtems_isr C_Receive_ISR(rtems_vector_number vector)
   else if (ipend == 0x20) port = 1;   /* channel A intr pending */
   else return;
     
-  Ring_buffer_Add_character(&Buffer[port], ZREADD(port));
+  Ring_buffer_Add_character(&Console_Buffer[port], ZREADD(port));
   
   if (ZREAD(port, 1) & 0x70) {    /* check error stat */
     ZWRITE0(port, 0x30);          /* reset error */
@@ -64,7 +64,7 @@ rtems_device_driver console_initialize(
    */
 
   for (i = 0; i <= 1; i++) {
-    Ring_buffer_Initialize( &Buffer[i] );
+    Ring_buffer_Initialize( &Console_Buffer[i] );
     ZWRITE(i, 2, SCC_VECTOR);
     ZWRITE(i, 10, 0);
     ZWRITE(i, 1, 0x10);     /* int on all Rx chars or special condition */
@@ -113,10 +113,10 @@ rtems_device_driver console_initialize(
 
 rtems_boolean char_ready(int port, char *ch)
 {
-  if ( Ring_buffer_Is_empty( &Buffer[port] ) )
+  if ( Ring_buffer_Is_empty( &Console_Buffer[port] ) )
     return FALSE;
 
-  Ring_buffer_Remove_character( &Buffer[port], *ch );
+  Ring_buffer_Remove_character( &Console_Buffer[port], *ch );
   
   return TRUE;
 }
@@ -199,7 +199,6 @@ rtems_device_driver console_read(
     buffer[ count ] = inbyte( minor );
     if (buffer[ count ] == '\n' || buffer[ count ] == '\r') {
       buffer[ count++ ]  = '\n';
-      buffer[ count ]  = 0;
       break;
     }
   }

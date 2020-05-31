@@ -3,13 +3,13 @@
  *  This include file contains the status codes returned from the
  *  executive directives.
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -52,11 +52,13 @@ typedef enum {
   RTEMS_NOT_OWNER_OF_RESOURCE    = 23, /* not owner of resource */
   RTEMS_NOT_IMPLEMENTED          = 24, /* directive not implemented */
   RTEMS_INTERNAL_ERROR           = 25, /* RTEMS inconsistency detected */
-  RTEMS_NO_MEMORY                = 26  /* could not get enough memory */
+  RTEMS_NO_MEMORY                = 26, /* could not get enough memory */
+  RTEMS_IO_ERROR                 = 27, /* driver IO error */
+  RTEMS_PROXY_BLOCKING           = 28  /* internal error only */
 } rtems_status_code;
 
 #define RTEMS_STATUS_CODES_FIRST RTEMS_SUCCESSFUL
-#define RTEMS_STATUS_CODES_LAST  RTEMS_NO_MEMORY
+#define RTEMS_STATUS_CODES_LAST  RTEMS_PROXY_BLOCKING
 
 extern rtems_status_code _Status_Object_name_errors_to_status[];
 

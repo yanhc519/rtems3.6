@@ -1,0 +1,29 @@
+#
+#  $Id$
+#
+
+@SET_MAKE@
+srcdir = @srcdir@
+VPATH = @srcdir@
+RTEMS_ROOT = @top_srcdir@
+PROJECT_ROOT = @PROJECT_ROOT@
+
+include $(RTEMS_ROOT)/make/custom/$(RTEMS_BSP).cfg
+include $(RTEMS_ROOT)/make/directory.cfg
+
+all: README
+
+# mptests are the multiprocessing test suite
+# We only build them if HAS_MP was defined
+MP_TESTS_yes_V = mptests
+MP_TESTS = $(MP_TESTS_$(HAS_MP)_V)
+
+# psxtests are the POSIX API test suite
+# We only build them if HAS_POSIX_API was defined
+POSIX_TESTS_yes_V = psxtests
+POSIX_TESTS = $(POSIX_TESTS_$(HAS_POSIX_API)_V)
+ 
+# wildcard on this lets ALL test suites be optional
+SUB_DIRS=$(wildcard tools support samples libtests \
+         sptests $(MP_TESTS) $(POSIX_TESTS) tmtests)
+

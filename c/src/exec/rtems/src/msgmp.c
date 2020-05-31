@@ -2,13 +2,13 @@
  *  Multiprocessing Support for the Message Queue Manager
  *
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -73,6 +73,8 @@ void _Message_queue_MP_Send_process_packet (
     case MESSAGE_QUEUE_MP_BROADCAST_RESPONSE:
     case MESSAGE_QUEUE_MP_FLUSH_REQUEST:
     case MESSAGE_QUEUE_MP_FLUSH_RESPONSE:
+    case MESSAGE_QUEUE_MP_GET_NUMBER_PENDING_REQUEST:
+    case MESSAGE_QUEUE_MP_GET_NUMBER_PENDING_RESPONSE:
       break;
 
   }
@@ -101,6 +103,7 @@ rtems_status_code _Message_queue_MP_Send_request_packet (
     case MESSAGE_QUEUE_MP_URGENT_REQUEST:
     case MESSAGE_QUEUE_MP_BROADCAST_REQUEST:
     case MESSAGE_QUEUE_MP_FLUSH_REQUEST:
+    case MESSAGE_QUEUE_MP_GET_NUMBER_PENDING_REQUEST:
 
       the_packet                    = _Message_queue_MP_Get_packet();
       the_packet->Prefix.the_class  = MP_PACKET_MESSAGE_QUEUE;
@@ -120,7 +123,7 @@ rtems_status_code _Message_queue_MP_Send_request_packet (
           return RTEMS_INVALID_SIZE;
       }
 
-      if ( ! _Options_Is_no_wait(option_set))
+      if (! _Options_Is_no_wait(option_set))
           the_packet->Prefix.timeout = timeout;
 
       the_packet->operation  = operation;
@@ -140,9 +143,11 @@ rtems_status_code _Message_queue_MP_Send_request_packet (
           );
       }
 
-      return _MPCI_Send_request_packet(rtems_get_node(message_queue_id),
-                                       &the_packet->Prefix,
-                                       STATES_WAITING_FOR_MESSAGE);
+      return (rtems_status_code) _MPCI_Send_request_packet(
+        rtems_get_node(message_queue_id),
+        &the_packet->Prefix,
+        STATES_WAITING_FOR_MESSAGE
+      );
       break;
 
     case MESSAGE_QUEUE_MP_RECEIVE_REQUEST:
@@ -152,7 +157,7 @@ rtems_status_code _Message_queue_MP_Send_request_packet (
       the_packet->Prefix.length     = sizeof(Message_queue_MP_Packet);
       the_packet->Prefix.to_convert = sizeof(Message_queue_MP_Packet);
 
-      if ( ! _Options_Is_no_wait(option_set))
+      if (! _Options_Is_no_wait(option_set))
           the_packet->Prefix.timeout = timeout;
 
       the_packet->operation  = MESSAGE_QUEUE_MP_RECEIVE_REQUEST;
@@ -163,9 +168,11 @@ rtems_status_code _Message_queue_MP_Send_request_packet (
       _Thread_Executing->Wait.return_argument   = (unsigned32 *)buffer;
       _Thread_Executing->Wait.return_argument_1 = size_p;
       
-      return _MPCI_Send_request_packet(rtems_get_node(message_queue_id),
-                                       &the_packet->Prefix,
-                                       STATES_WAITING_FOR_MESSAGE);
+      return (rtems_status_code) _MPCI_Send_request_packet(
+        rtems_get_node(message_queue_id),
+        &the_packet->Prefix,
+        STATES_WAITING_FOR_MESSAGE
+      );
       break;
 
     case MESSAGE_QUEUE_MP_ANNOUNCE_CREATE:
@@ -176,6 +183,7 @@ rtems_status_code _Message_queue_MP_Send_request_packet (
     case MESSAGE_QUEUE_MP_URGENT_RESPONSE:
     case MESSAGE_QUEUE_MP_BROADCAST_RESPONSE:
     case MESSAGE_QUEUE_MP_FLUSH_RESPONSE:
+    case MESSAGE_QUEUE_MP_GET_NUMBER_PENDING_RESPONSE:
       break;
   }
 
@@ -203,6 +211,7 @@ void _Message_queue_MP_Send_response_packet (
     case MESSAGE_QUEUE_MP_URGENT_RESPONSE:
     case MESSAGE_QUEUE_MP_BROADCAST_RESPONSE:
     case MESSAGE_QUEUE_MP_FLUSH_RESPONSE:
+    case MESSAGE_QUEUE_MP_GET_NUMBER_PENDING_RESPONSE:
 
       the_packet = ( Message_queue_MP_Packet *) the_thread->receive_packet;
 
@@ -233,6 +242,7 @@ void _Message_queue_MP_Send_response_packet (
     case MESSAGE_QUEUE_MP_URGENT_REQUEST:
     case MESSAGE_QUEUE_MP_BROADCAST_REQUEST:
     case MESSAGE_QUEUE_MP_FLUSH_REQUEST:
+    case MESSAGE_QUEUE_MP_GET_NUMBER_PENDING_REQUEST:
       break;
 
   }
@@ -280,7 +290,7 @@ void _Message_queue_MP_Process_packet (
 
       the_thread = _Thread_MP_Find_proxy( the_packet->proxy_id );
 
-      if ( ! _Thread_Is_null( the_thread ) )
+      if (! _Thread_Is_null( the_thread ) )
          _Thread_queue_Extract( the_thread->Wait.queue, the_thread );
 
       _MPCI_Return_packet( the_packet_prefix );
@@ -296,7 +306,7 @@ void _Message_queue_MP_Process_packet (
         the_packet->Prefix.timeout
       );
 
-      if ( ! _Thread_Is_proxy_blocking( the_packet->Prefix.return_code ) )
+      if (! _Thread_Is_proxy_blocking( the_packet->Prefix.return_code ) )
         _Message_queue_MP_Send_response_packet(
           MESSAGE_QUEUE_MP_RECEIVE_RESPONSE,
           the_packet->Prefix.id,
@@ -378,6 +388,7 @@ void _Message_queue_MP_Process_packet (
 
     case MESSAGE_QUEUE_MP_BROADCAST_RESPONSE:
     case MESSAGE_QUEUE_MP_FLUSH_RESPONSE:
+    case MESSAGE_QUEUE_MP_GET_NUMBER_PENDING_RESPONSE:
 
       the_thread = _MPCI_Process_response( the_packet_prefix );
 
@@ -395,6 +406,20 @@ void _Message_queue_MP_Process_packet (
 
       _Message_queue_MP_Send_response_packet(
         MESSAGE_QUEUE_MP_FLUSH_RESPONSE,
+        the_packet->Prefix.id,
+        _Thread_Executing
+      );
+      break;
+
+    case MESSAGE_QUEUE_MP_GET_NUMBER_PENDING_REQUEST:
+
+      the_packet->Prefix.return_code = rtems_message_queue_get_number_pending(
+        the_packet->Prefix.id,
+        &the_packet->count
+      );
+
+      _Message_queue_MP_Send_response_packet(
+        MESSAGE_QUEUE_MP_GET_NUMBER_PENDING_RESPONSE,
         the_packet->Prefix.id,
         _Thread_Executing
       );

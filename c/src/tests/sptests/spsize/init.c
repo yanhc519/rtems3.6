@@ -11,19 +11,21 @@
  *
  *  Output parameters:  NONE
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
 
 #define TEST_INIT
 #include "system.h"
+
+/* #define HAVE_MENU */
 
 rtems_task Test_task();
 void size_rtems( int mode );
@@ -32,7 +34,9 @@ rtems_task Init(
   rtems_task_argument argument
 )
 {
-  int choice;
+#if defined(HAVE_MENU)
+  int choice = 0;
+#endif
 
   setvbuf(stdout, 0, _IONBF, 0);
 
@@ -40,7 +44,7 @@ rtems_task Init(
   size_rtems( 1 );
   puts( "*** END OF RTEMS SIZE PROGRAM ***" );
   exit( 0 );
-#if 0
+#if defined(HAVE_MENU)
   do {
     printf( "\n\nPlease select program mode:\n" );
     printf( "  1) Print Formulas\n" );

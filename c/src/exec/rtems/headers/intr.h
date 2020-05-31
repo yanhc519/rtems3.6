@@ -3,13 +3,13 @@
  *  This include file contains all the constants and structures associated
  *  with the Interrupt Manager.
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -73,9 +73,9 @@ void _Interrupt_Manager_initialization( void );
  */
 
 rtems_status_code rtems_interrupt_catch(
-  rtems_isr_entry    new_isr_handler,
+  rtems_isr_entry      new_isr_handler,
   rtems_vector_number  vector,
-  rtems_isr_entry   *old_isr_handler
+  rtems_isr_entry     *old_isr_handler
 );
 
 /*
@@ -120,7 +120,7 @@ rtems_status_code rtems_interrupt_catch(
  *  DESCRIPTION:
  *
  *  This function returns TRUE if the processor is currently servicing
- *  and interrupt and FALSE otherwise.   A return value of TRUE indicates
+ *  an interrupt and FALSE otherwise.   A return value of TRUE indicates
  *  that the caller is an interrupt service routine, NOT a thread.  The
  *  directives available to an interrupt service routine are restricted.
  */

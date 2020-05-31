@@ -17,7 +17,7 @@
  *  notice.  This file is freely distributable as long as the source
  *  of the file is noted.  This file is:
  *
- *  COPYRIGHT (c) 1994.
+ *  COPYRIGHT (c) 1994-1997.
  *  On-Line Applications Research Corporation (OAR).
  *
  *  $Id$
@@ -31,7 +31,10 @@
  *  Indicate we are in an assembly file and get the basic CPU definitions.
  */
 
+#ifndef ASM
 #define ASM
+#endif
+#include <rtems/score/targopts.h>
 #include <rtems/score/no_cpu.h>
 
 /*

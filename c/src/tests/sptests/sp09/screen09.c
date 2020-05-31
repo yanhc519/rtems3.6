@@ -6,13 +6,13 @@
  *
  *  Output parameters:  NONE
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -43,7 +43,15 @@ void Screen9()
     RTEMS_INVALID_ADDRESS,
     "rtems_interrupt_catch with invalid handler"
   );
-  puts( "TA1 - rtems_interrupt_catch - RTEMS_INVALID_ADDRESS" );
+  puts( "TA1 - rtems_interrupt_catch - bad handler RTEMS_INVALID_ADDRESS" );
+
+  status = rtems_interrupt_catch( Service_routine, 3, NULL );
+  fatal_directive_status(
+    status,
+    RTEMS_INVALID_ADDRESS,
+    "rtems_interrupt_catch with invalid old isr pointer"
+  );
+  puts( "TA1 - rtems_interrupt_catch - old isr RTEMS_INVALID_ADDRESS" );
 
   status = rtems_signal_send( 100, RTEMS_SIGNAL_1 );
   fatal_directive_status(

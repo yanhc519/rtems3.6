@@ -1,0 +1,28 @@
+#
+#  $Id$
+#
+
+@SET_MAKE@
+srcdir = @srcdir@
+VPATH = @srcdir@
+RTEMS_ROOT = @top_srcdir@
+PROJECT_ROOT = @PROJECT_ROOT@
+
+include $(RTEMS_ROOT)/make/custom/$(RTEMS_BSP).cfg
+include $(RTEMS_ROOT)/make/directory.cfg
+
+# We only build the networking library if HAS_NETWORKING was defined
+LIBNETWORKING_yes_V = libnetworking
+LIBNETWORKING = $(LIBNETWORKING_$(HAS_NETWORKING)_V)
+NETWORKING_INCLUDE_yes_V = libnetworking/include
+NETWORKING_INCLUDE = $(NETWORKING_INCLUDE_$(HAS_NETWORKING)_V)
+
+# We only build the rtems++ library if HAS_CPLUSPLUS was defined
+LIBRTEMSCPLUSPLUS_yes_V = librtems++
+LIBRTEMSCPLUSPLUS = $(LIBRTEMSCPLUSPLUS_$(HAS_CPLUSPLUS)_V)
+
+# General Hardware API library 
+LIBHWAPI=$(wildcard libhwapi)
+
+SUB_DIRS=start include $(NETWORKING_INCLUDE) libmisc libc libcpu libbsp \
+         $(LIBNETWORKING) $(LIBHWAPI) $(LIBRTEMSCPLUSPLUS) wrapup

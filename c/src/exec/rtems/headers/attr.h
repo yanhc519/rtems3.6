@@ -3,13 +3,13 @@
  *  This include file contains all information about the Object Attributes
  *  Handler.
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -47,7 +47,10 @@ typedef unsigned32 rtems_attribute;
 #define RTEMS_NO_PRIORITY_CEILING 0x00000000
 #define RTEMS_PRIORITY_CEILING    0x00000040
 
-#if ( CPU_HARDWARE_FP == TRUE )
+#define RTEMS_APPLICATION_TASK    0x00000000
+#define RTEMS_SYSTEM_TASK         0x00000080
+
+#if ( CPU_HARDWARE_FP == TRUE ) || ( CPU_SOFTWARE_FP == TRUE )
 #define ATTRIBUTES_NOT_SUPPORTED       0
 #else
 #define ATTRIBUTES_NOT_SUPPORTED       RTEMS_FLOATING_POINT

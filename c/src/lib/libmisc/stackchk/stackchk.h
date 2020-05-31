@@ -3,13 +3,13 @@
  *  This include file contains information necessary to utilize
  *  and install the stack checker mechanism.
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -32,6 +32,48 @@ void Stack_check_Initialize( void );
  */
 
 void Stack_check_Dump_usage( void );
+
+/*
+ *  Stack_check_Create_extension
+ */
+
+boolean Stack_check_Create_extension(
+  Thread_Control *running,
+  Thread_Control *the_thread
+);
+
+/*
+ *  Stack_check_Begin_extension
+ */
+
+void Stack_check_Begin_extension(
+  Thread_Control *the_thread
+);
+
+/*
+ *  Stack_check_Switch_extension
+ */
+
+void Stack_check_Switch_extension(
+  Thread_Control *running,
+  Thread_Control *heir
+);
+
+/*
+ *  Extension set definition
+ */
+
+#define STACK_CHECKER_EXTENSION \
+{ \
+  Stack_check_Create_extension,        /* rtems_task_create  */ \
+  0,                                   /* rtems_task_start   */ \
+  0,                                   /* rtems_task_restart */ \
+  0,                                   /* rtems_task_delete  */ \
+  Stack_check_Switch_extension,        /* task_switch  */ \
+  Stack_check_Begin_extension,         /* task_begin   */ \
+  0,                                   /* task_exitted */ \
+  0 /* Stack_check_Fatal_extension */, /* fatal        */ \
+}
 
 #ifdef __cplusplus
 }

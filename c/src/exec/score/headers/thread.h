@@ -3,13 +3,13 @@
  *  This include file contains all constants and structures associated
  *  with the thread control block.
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -53,7 +53,12 @@ typedef enum {
   THREAD_START_BOTH_NUMERIC_FIRST
 } Thread_Start_types;
 
-typedef Thread ( *Thread_Entry )( );
+typedef Thread ( *Thread_Entry )();   /* basic type */
+
+typedef Thread ( *Thread_Entry_numeric )( unsigned32 );
+typedef Thread ( *Thread_Entry_pointer )( void * );
+typedef Thread ( *Thread_Entry_both_pointer_first )( void *, unsigned32 );
+typedef Thread ( *Thread_Entry_both_numeric_first )( unsigned32, void * );
 
 /*
  *  The following lists the algorithms used to manage the thread cpu budget.
@@ -93,7 +98,7 @@ typedef struct {
   boolean              core_allocated_stack;
   Stack_Control        Initial_stack;    /* stack information               */
   void                *fp_context;       /* initial FP context area address */
-  void                *stack;            /* initial FP context area address */
+  void                *stack;            /* initial stack area address      */
 }   Thread_Start_information;
 
 /*
@@ -176,6 +181,7 @@ struct Thread_Control_struct {
   Thread_CPU_budget_algorithms          budget_algorithm;
   Thread_CPU_budget_algorithm_callout   budget_callout;
 
+  unsigned32                            ticks_executed;
   Chain_Control                        *ready;
   Priority_Information                  Priority_map;
   Thread_Start_information              Start;
@@ -185,14 +191,6 @@ struct Thread_Control_struct {
   void                                **extensions;
 };
 
-/*
- *  The following constants define the stack size requirements for
- *  the idle thread.
- */
- 
- 
-#define THREAD_IDLE_STACK_SIZE  STACK_MINIMUM_SIZE
- 
 /*
  *  The following defines the information control block used to
  *  manage this class of objects.
@@ -555,7 +553,8 @@ void _Thread_Delay_ended(
 
 void _Thread_Change_priority (
   Thread_Control   *the_thread,
-  Priority_Control  new_priority
+  Priority_Control  new_priority,
+  boolean           prepend_it
 );
 
 /*

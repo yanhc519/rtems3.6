@@ -1,17 +1,11 @@
 /*
  *  UNIX Simulator Dependent Source
  *
+ *  COPYRIGHT (c) 1994,95 by Division Incorporated
  *
- *  To anyone who acknowledges that this file is provided "AS IS"
- *  without any express or implied warranty:
- *      permission to use, copy, modify, and distribute this file
- *      for any purpose is hereby granted without fee, provided that
- *      the above copyright notice and this notice appears in all
- *      copies, and that the name of Division Incorporated not be
- *      used in advertising or publicity pertaining to distribution
- *      of the software without specific, written prior permission.
- *      Division Incorporated makes no representations about the
- *      suitability of this software for any purpose.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -20,17 +14,8 @@
 #include <rtems/score/isr.h>
 #include <rtems/score/interr.h>
 
-#if defined(solaris2)
-/*
-#undef  _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 3
-#undef  __STRICT_ANSI__
-#define __STRICT_ANSI__
-*/
-#define __EXTENSIONS__
-#endif
-
-#if defined(linux)
+#if defined(__linux__)
+#define _XOPEN_SOURCE
 #define MALLOC_0_RETURNS_NULL
 #endif
 
@@ -55,7 +40,7 @@
 
 typedef struct {
   jmp_buf   regs;
-  unsigned32  isr_level;
+  int  isr_level;
 } Context_Control_overlay;
 
 void  _CPU_Signal_initialize(void);
@@ -67,6 +52,18 @@ static Context_Control_overlay
           _CPU_Context_Default_with_ISRs_enabled CPU_STRUCTURE_ALIGNMENT;
 static Context_Control_overlay
           _CPU_Context_Default_with_ISRs_disabled CPU_STRUCTURE_ALIGNMENT;
+
+/*
+ * Sync IO support, an entry for each fd that can be set
+ */
+
+void  _CPU_Sync_io_Init();
+
+static rtems_sync_io_handler _CPU_Sync_io_handlers[FD_SETSIZE];
+static int sync_io_nfds;
+static fd_set sync_io_readfds;
+static fd_set sync_io_writefds;
+static fd_set sync_io_exceptfds;
 
 /*
  * Which cpu are we? Used by libcpu and libbsp.
@@ -155,8 +152,12 @@ void _CPU_Signal_initialize( void )
   sigaction(SIGUSR1, &act, 0);
   sigaction(SIGUSR2, &act, 0);
   sigaction(SIGCHLD, &act, 0);
+#ifdef SIGCLD
   sigaction(SIGCLD, &act, 0);
+#endif
+#ifdef SIGPWR
   sigaction(SIGPWR, &act, 0);
+#endif
   sigaction(SIGVTALRM, &act, 0);
   sigaction(SIGPROF, &act, 0);
   sigaction(SIGIO, &act, 0);
@@ -178,7 +179,7 @@ void _CPU_Signal_initialize( void )
 void _CPU_Context_From_CPU_Init()
 {
 
-#if defined(hppa1_1) && defined(RTEMS_UNIXLIB_SETJMP)
+#if defined(__hppa__) && defined(RTEMS_UNIXLIB_SETJMP)
     /*
      * HACK - set the _SYSTEM_ID to 0x20c so that setjmp/longjmp
      * will handle the full 32 floating point registers.
@@ -222,6 +223,24 @@ void _CPU_Context_From_CPU_Init()
 
 /*PAGE
  *
+ *  _CPU_Sync_io_Init
+ */
+
+void _CPU_Sync_io_Init()
+{
+  int fd;
+
+  for (fd = 0; fd < FD_SETSIZE; fd++)
+    _CPU_Sync_io_handlers[fd] = NULL;
+
+  sync_io_nfds = 0;
+  FD_ZERO(&sync_io_readfds);
+  FD_ZERO(&sync_io_writefds);
+  FD_ZERO(&sync_io_exceptfds);
+}
+
+/*PAGE
+ *
  *  _CPU_ISR_Get_level
  */
 
@@ -229,6 +248,9 @@ unsigned32 _CPU_ISR_Get_level( void )
 {
   sigset_t old_mask;
 
+#if defined(__linux__)
+  sigemptyset( &old_mask );
+#endif
   sigprocmask(SIG_BLOCK, 0, &old_mask);
 
   if (memcmp((void *)&posix_empty_mask, (void *)&old_mask, sizeof(sigset_t)))
@@ -277,6 +299,8 @@ void _CPU_Initialize(
   _CPU_Table = *cpu_table;
 
   _CPU_ISR_From_CPU_Init();
+
+  _CPU_Sync_io_Init();
 
   _CPU_Context_From_CPU_Init();
 
@@ -356,13 +380,52 @@ void _CPU_Install_interrupt_stack( void )
 
 void _CPU_Thread_Idle_body( void )
 {
+#if CPU_SYNC_IO
+  extern void _Thread_Dispatch(void);
+  int fd;
+#endif
+
   while (1) {
 #ifdef RTEMS_DEBUG
     /* interrupts had better be enabled at this point! */
     if (_CPU_ISR_Get_level() != 0)
        abort();
 #endif
+
+    /*
+     *  Block on a select statement, the CPU interface added allow the
+     *  user to add new descriptors which are to be blocked on
+     */
+
+#if CPU_SYNC_IO
+    if (sync_io_nfds) {
+      int result;
+
+      result = select(sync_io_nfds,
+                 &sync_io_readfds,
+                 &sync_io_writefds,
+                 &sync_io_exceptfds,
+                 NULL);
+
+      if ((result < 0) && (errno != EINTR))
+        _CPU_Fatal_error(0x200);       /* FIXME : what number should go here !! */
+
+      for (fd = 0; fd < sync_io_nfds; fd++) {
+        boolean read = FD_ISSET(fd, &sync_io_readfds);
+        boolean write = FD_ISSET(fd, &sync_io_writefds);
+        boolean except = FD_ISSET(fd, &sync_io_exceptfds);
+
+        if (_CPU_Sync_io_handlers[fd] && (read || write || except))
+          _CPU_Sync_io_handlers[fd](fd, read, write, except);
+
+        _Thread_Dispatch();
+      }
+    } else
+      pause();
+#else
     pause();
+#endif
+
   }
 
 }
@@ -419,7 +482,7 @@ void _CPU_Context_Initialize(
 
   addr = (unsigned32 *)_the_context;
 
-#if defined(hppa1_1)
+#if defined(__hppa__)
   *(addr + RP_OFF) = jmp_addr;
   *(addr + SP_OFF) = (unsigned32)(_stack_low + CPU_FRAME_SIZE);
 
@@ -434,7 +497,7 @@ void _CPU_Context_Initialize(
     jmp_addr &= 0xfffffffc;
      *(addr + RP_OFF) = *(unsigned32 *)jmp_addr;
   }
-#elif defined(sparc)
+#elif defined(__sparc__)
 
   /*
    *  See /usr/include/sys/stack.h in Solaris 2.3 for a nice
@@ -447,7 +510,7 @@ void _CPU_Context_Initialize(
   *(addr + SP_OFF) = (unsigned32)(_stack_high - CPU_FRAME_SIZE);
   *(addr + FP_OFF) = (unsigned32)(_stack_high);
 
-#elif defined(i386)
+#elif defined(__i386__)
 
     /*
      *  This information was gathered by disassembling setjmp().
@@ -682,9 +745,10 @@ void _CPU_Stray_signal(int sig_num)
 
   switch (sig_num)
   {
+#ifdef SIGCLD
       case SIGCLD:
           break;
-
+#endif
       default:
       {
         /*
@@ -762,6 +826,55 @@ void _CPU_Fatal_error(unsigned32 error)
  *  Special Purpose Routines to hide the use of UNIX system calls.
  */
 
+int _CPU_Set_sync_io_handler(
+  int fd,
+  boolean read,
+  boolean write,
+  boolean except,
+  rtems_sync_io_handler handler
+)
+{
+  if ((fd < FD_SETSIZE) && (_CPU_Sync_io_handlers[fd] == NULL)) {
+    if (read)
+      FD_SET(fd, &sync_io_readfds);
+    else
+      FD_CLR(fd, &sync_io_readfds);
+    if (write)
+      FD_SET(fd, &sync_io_writefds);
+    else
+      FD_CLR(fd, &sync_io_writefds);
+    if (except)
+      FD_SET(fd, &sync_io_exceptfds);
+    else
+      FD_CLR(fd, &sync_io_exceptfds);
+    _CPU_Sync_io_handlers[fd] = handler;
+    if ((fd + 1) > sync_io_nfds)
+      sync_io_nfds = fd + 1;
+    return 0;
+  }
+  return -1;
+}
+
+int _CPU_Clear_sync_io_handler(
+  int fd
+)
+{
+  if ((fd < FD_SETSIZE) && _CPU_Sync_io_handlers[fd]) {
+    FD_CLR(fd, &sync_io_readfds);
+    FD_CLR(fd, &sync_io_writefds);
+    FD_CLR(fd, &sync_io_exceptfds);
+    _CPU_Sync_io_handlers[fd] = NULL;
+    sync_io_nfds = 0;
+    for (fd = 0; fd < FD_SETSIZE; fd++)
+      if (FD_ISSET(fd, &sync_io_readfds) ||
+          FD_ISSET(fd, &sync_io_writefds) ||
+          FD_ISSET(fd, &sync_io_exceptfds))
+        sync_io_nfds = fd;
+    return 0;
+  }
+  return -1;
+}
+
 int _CPU_Get_clock_vector( void )
 {
   return SIGALRM;
@@ -817,7 +930,7 @@ void _CPU_SHM_Init(
   char        *shm_addr;
   key_t        shm_key;
   key_t        sem_key;
-  int          status;
+  int          status = 0;  /* to avoid unitialized warnings */
   int          shm_size;
 
   if (getenv("RTEMS_SHM_KEY"))
@@ -879,9 +992,15 @@ void _CPU_SHM_Init(
 
         help.val = 1;
         status = semctl( _CPU_SHM_Semid, i, SETVAL, help );
-#endif
-#if defined(hpux)
+#elif defined(__linux__) || defined(__FreeBSD__)
+        union semun help;
+
+        help.val = 1;
+        status = semctl( _CPU_SHM_Semid, i, SETVAL, help );
+#elif defined(hpux)
         status = semctl( _CPU_SHM_Semid, i, SETVAL, 1 );
+#else
+#error "Not a supported unix variant"
 #endif
 
         fix_syscall_errno(); /* in case of newlib */
@@ -939,14 +1058,15 @@ void _CPU_SHM_Lock(
   int semaphore
 )
 {
-  struct sembuf      sb;
-  int                status;
+  struct sembuf sb;
 
   sb.sem_num = semaphore;
   sb.sem_op  = -1;
   sb.sem_flg = 0;
 
   while (1) {
+    int status = -1;
+
     status = semop(_CPU_SHM_Semid, &sb, 1);
     if ( status >= 0 )
       break;

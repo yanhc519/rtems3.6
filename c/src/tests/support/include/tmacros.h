@@ -3,13 +3,13 @@
  *  This include file contains macros which are useful in the RTEMS
  *  test suites.
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -69,6 +69,17 @@ extern "C" {
 
 #define puts_nocr printf
 
+#ifdef RTEMS_TEST_NO_PAUSE
+#define rtems_test_pause() \
+    do { \
+      printf( "<pause>\n" ); fflush( stdout ); \
+  } while ( 0 )
+
+#define rtems_test_pause_and_screen_number( _screen ) \
+  do { \
+    printf( "<pause - screen %d>\n", (_screen) ); fflush( stdout ); \
+  } while ( 0 )
+#else
 #define rtems_test_pause() \
   do { \
     char buffer[ 80 ]; \
@@ -84,6 +95,7 @@ extern "C" {
     gets( buffer ); \
     puts( "" ); \
   } while ( 0 )
+#endif
 
 #define put_name( name, crlf ) \
 { rtems_unsigned32 c0, c1, c2, c3; \

@@ -3,13 +3,13 @@
  *  This include file contains information pertaining to the Intel
  *  i960 processor family.
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -23,7 +23,7 @@ extern "C" {
 
 #pragma align 4            /* for GNU C structure alignment */
 
-#include <rtems/score/i960.h>
+#include <rtems/score/i960.h>              /* pick up machine definitions */
 #ifndef ASM
 #include <rtems/score/i960types.h>
 #endif
@@ -39,6 +39,14 @@ extern "C" {
 #define CPU_HAS_SOFTWARE_INTERRUPT_STACK FALSE
 #define CPU_HAS_HARDWARE_INTERRUPT_STACK TRUE
 #define CPU_ALLOCATE_INTERRUPT_STACK     TRUE
+
+/*
+ *  Does the RTEMS invoke the user's ISR with the vector number and
+ *  a pointer to the saved interrupt frame (1) or just the vector 
+ *  number (0)?
+ */
+
+#define CPU_ISR_PASSES_FRAME_POINTER 0
 
 /*
  *  Some family members have no FP (SA/KA/CA/CF), others have it built in
@@ -60,6 +68,16 @@ extern "C" {
 #define CPU_PROVIDES_IDLE_THREAD_BODY    FALSE
 #define CPU_STACK_GROWS_UP               TRUE
 #define CPU_STRUCTURE_ALIGNMENT          __attribute__ ((aligned (16)))
+
+/*
+ *  Define what is required to specify how the network to host conversion
+ *  routines are handled.
+ */
+
+#define CPU_CPU_HAS_OWN_HOST_TO_NETWORK_ROUTINES FALSE
+#define CPU_BIG_ENDIAN                           TRUE
+#define CPU_LITTLE_ENDIAN                        FALSE
+
 
 /* structures */
 
@@ -144,6 +162,7 @@ typedef struct {
   void       (*postdriver_hook)( void );
   void       (*idle_task)( void );
   boolean      do_zero_of_workspace;
+  unsigned32   idle_task_stack_size;
   unsigned32   interrupt_stack_size;
   unsigned32   extra_mpci_receive_server_stack;
   void *     (*stack_allocate_hook)( unsigned32 );
@@ -231,7 +250,8 @@ SCORE_EXTERN void               *_CPU_Interrupt_stack_high;
 
 #define _CPU_ISR_Set_level( newlevel ) \
   { \
-    unsigned32 _mask, _level=(newlevel); \
+    unsigned32 _mask = 0; \
+    unsigned32 _level = (newlevel); \
     \
     __asm__ volatile ( "ldconst 0x1f0000,%0; \
                     modpc   0,%0,%1"     : "=d" (_mask), "=d" (_level) \
@@ -326,6 +346,7 @@ unsigned32 _CPU_ISR_Get_level( void );
 #define _CPU_Bitfield_Find_first_bit( _value, _output ) \
   { unsigned32 _search = (_value); \
     \
+    (_output) = 0; /* to prevent warnings */ \
     __asm__ volatile ( "scanbit   %0,%1  " \
                     : "=d" (_search), "=d" (_output) \
                     : "0"  (_search), "1"  (_output) ); \
@@ -411,7 +432,7 @@ void _CPU_Context_switch(
 /*
  *  _CPU_Context_restore
  *
- *  This routine is generallu used only to restart self in an
+ *  This routine is generally used only to restart self in an
  *  efficient manner and avoid stack conflicts.
  */
 

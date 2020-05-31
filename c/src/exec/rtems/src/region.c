@@ -2,13 +2,13 @@
  *  Region Manager
  *
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -360,7 +360,7 @@ rtems_status_code rtems_region_get_segment(
       _Thread_queue_Enqueue( &the_region->Wait_queue, timeout );
 
       _Thread_Enable_dispatch();
-      return( executing->Wait.return_code );
+      return (rtems_status_code) executing->Wait.return_code;
   }
 
   return RTEMS_INTERNAL_ERROR;   /* unreached - only to remove warnings */
@@ -464,7 +464,7 @@ rtems_status_code rtems_region_return_segment(
         if ( the_thread == NULL )
            break;
 
-        the_segment = _Region_Allocate_segment(
+        the_segment = (void **) _Region_Allocate_segment(
            the_region, 
            the_thread->Wait.count
         );

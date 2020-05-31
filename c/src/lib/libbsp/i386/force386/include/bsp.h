@@ -2,13 +2,13 @@
  *
  *  This include file definitions related to the Force CPU-386 board.
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -142,18 +142,15 @@ extern "C" {
  * NOTE: Use the standard Clock driver entry
  */
 
-/*
- * How many libio files we want
- */
-
-#define BSP_LIBIO_MAX_FDS       20
-
 /* miscellaneous stuff assumed to exist */
 
 extern rtems_configuration_table BSP_Configuration;
 
-extern i386_IDT_slot Interrupt_descriptor_table[ 256 ];
-extern i386_GDT_slot Global_descriptor_table[ 8192 ];
+#define IDT_SIZE 256
+#define GDT_SIZE 8192
+
+extern interrupt_gate_descriptor Interrupt_descriptor_table[IDT_SIZE];
+extern segment_descriptors Global_descriptor_table   [GDT_SIZE];
 
 BSP_EXTERN unsigned short Idt[3];  /* Interrupt Descriptor Table Address */
 BSP_EXTERN unsigned short Gdt[3];  /* Global Descriptor Table Address */

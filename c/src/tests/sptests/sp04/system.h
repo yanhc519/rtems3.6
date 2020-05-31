@@ -3,13 +3,13 @@
  *  This include file contains information that is included in every
  *  function in the test set.
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -51,6 +51,8 @@ void Task_switch(
 
 #define CONFIGURE_RTEMS_INIT_TASKS_TABLE
 
+#define CONFIGURE_EXTRA_TASK_STACKS         (3 * RTEMS_MINIMUM_STACK_SIZE)
+
 #include <confdefs.h>
 
 /* global variables */
@@ -64,4 +66,15 @@ TEST_EXTERN rtems_name Extension_name[ 4 ];  /* array of task names */
 /* array of task run counts */
 TEST_EXTERN volatile rtems_unsigned32 Run_count[ 4 ];  
  
+/*
+ * Keep track of task switches
+ */
+struct taskSwitchLog {
+  int               taskIndex;
+  rtems_time_of_day when;
+};
+extern struct taskSwitchLog taskSwitchLog[];
+extern int taskSwitchLogIndex;
+volatile extern int testsFinished;
+
 /* end of include file */

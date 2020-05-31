@@ -10,18 +10,22 @@
  *
  *  Output parameters:  NONE
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
 
 #include "system.h"
+
+struct taskSwitchLog taskSwitchLog[1000];
+int taskSwitchLogIndex;
+volatile int testsFinished;;
 
 rtems_extension Task_switch( 
   rtems_tcb *unused,
@@ -43,13 +47,13 @@ rtems_extension Task_switch(
       status = rtems_clock_get( RTEMS_CLOCK_GET_TOD, &time );
       directive_failed( status, "rtems_clock_get" );
 
-      put_name( Task_name[ index ], FALSE );
-      print_time( "- ", &time, "\n" );
-
-      if ( time.second >= 16 ) {
-        puts( "*** END OF TEST 4 ***" );
-        exit( 0 );
+      if (taskSwitchLogIndex < (sizeof taskSwitchLog / sizeof taskSwitchLog[0])) {
+        taskSwitchLog[taskSwitchLogIndex].taskIndex = index;
+        taskSwitchLog[taskSwitchLogIndex].when = time;
+        taskSwitchLogIndex++;
       }
+      if ( time.second >= 16 )
+	testsFinished = 1;
       break;
 
     case 0:

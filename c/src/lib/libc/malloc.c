@@ -2,13 +2,13 @@
  *  RTEMS Malloc Family Implementation
  *
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -26,18 +26,24 @@
 #include <assert.h>
 #include <errno.h>
 #include <string.h>
+
+/* for sbrk prototype in linux */
+#if defined(__linux__)
+#define __USE_MISC
+#endif
 #include <unistd.h>    /* sbrk(2) */
 
 rtems_id RTEMS_Malloc_Heap;
 size_t RTEMS_Malloc_Sbrk_amount;
 
+extern rtems_cpu_table   Cpu_table;
 #ifdef RTEMS_DEBUG
 #define MALLOC_STATS
 #define MALLOC_DIRTY
 #endif
 
 #ifdef MALLOC_STATS
-#define MSBUMP(f,n)    malloc_stats.f += (n)
+#define MSBUMP(f,n)    rtems_malloc_stats.f += (n)
 
 struct {
     unsigned32  space_available;             /* current size of malloc area */
@@ -48,9 +54,9 @@ struct {
     unsigned32  max_depth;		     /* most ever malloc'd at 1 time */
     unsigned64  lifetime_allocated;
     unsigned64  lifetime_freed;
-} malloc_stats;
+} rtems_malloc_stats;
 
-#else			/* No malloc_stats */
+#else			/* No rtems_malloc_stats */
 #define MSBUMP(f,n)
 #endif
 
@@ -77,7 +83,7 @@ void RTEMS_Malloc_Initialize(
   if (!starting_address) {
     u32_address = (unsigned int)sbrk(length);
 
-    if (u32_address == -1) {
+    if (u32_address == (rtems_unsigned32) -1) {
       rtems_fatal_error_occurred( RTEMS_NO_MEMORY );
       /* DOES NOT RETURN!!! */
     }
@@ -95,6 +101,20 @@ void RTEMS_Malloc_Initialize(
 
     starting_address = (void *)u32_address;
   }
+
+  /*
+   *  If the BSP is not clearing out the workspace, then it is most likely
+   *  not clearing out the initial memory for the heap.  There is no 
+   *  standard supporting zeroing out the heap memory.  But much code
+   *  with UNIX history seems to assume that memory malloc'ed during
+   *  initialization (before any free's) is zero'ed.  This is true most
+   *  of the time under UNIX because zero'ing memory when it is first
+   *  given to a process eliminates the chance of a process seeing data
+   *  left over from another process.  This would be a security violation.
+   */
+
+  if ( Cpu_table.do_zero_of_workspace )
+     memset( starting_address, 0, length );
 
   /*
    *  Unfortunately we cannot use assert if this fails because if this
@@ -115,7 +135,7 @@ void RTEMS_Malloc_Initialize(
 
 #ifdef MALLOC_STATS
   /* zero all the stats */
-  (void) memset(&malloc_stats, 0, sizeof(malloc_stats));
+  (void) memset(&rtems_malloc_stats, 0, sizeof(rtems_malloc_stats));
 #endif
   
   MSBUMP(space_available, length);
@@ -165,7 +185,8 @@ void *malloc(
 
     the_size = ((size + sbrk_amount) / sbrk_amount * sbrk_amount);
 
-    if (((rtems_unsigned32)starting_address = (void *)sbrk(the_size)) == -1)
+    if (((rtems_unsigned32)starting_address = (void *)sbrk(the_size)) 
+            == (rtems_unsigned32) -1)
       return (void *) 0;
 
     status = rtems_region_extend(
@@ -201,9 +222,9 @@ void *malloc(
       unsigned32 current_depth;
       status = rtems_region_get_segment_size(RTEMS_Malloc_Heap, return_this, &actual_size);
       MSBUMP(lifetime_allocated, actual_size);
-      current_depth = malloc_stats.lifetime_allocated - malloc_stats.lifetime_freed;
-      if (current_depth > malloc_stats.max_depth)
-          malloc_stats.max_depth = current_depth;
+      current_depth = rtems_malloc_stats.lifetime_allocated - rtems_malloc_stats.lifetime_freed;
+      if (current_depth > rtems_malloc_stats.max_depth)
+          rtems_malloc_stats.max_depth = current_depth;
   }
 #endif
 
@@ -314,23 +335,23 @@ void free(
 
 void malloc_dump(void)
 {
-    unsigned32 allocated = malloc_stats.lifetime_allocated - malloc_stats.lifetime_freed;
+    unsigned32 allocated = rtems_malloc_stats.lifetime_allocated - rtems_malloc_stats.lifetime_freed;
 
     printf("Malloc stats\n");
     printf("  avail:%uk  allocated:%uk (%d%%) max:%uk (%d%%) lifetime:%Luk freed:%Luk\n",
-           (unsigned int) malloc_stats.space_available / 1024,
+           (unsigned int) rtems_malloc_stats.space_available / 1024,
            (unsigned int) allocated / 1024,
            /* avoid float! */
-           (allocated * 100) / malloc_stats.space_available,
-           (unsigned int) malloc_stats.max_depth / 1024,
-           (malloc_stats.max_depth * 100) / malloc_stats.space_available,
-           (unsigned64) malloc_stats.lifetime_allocated / 1024,
-           (unsigned64) malloc_stats.lifetime_freed / 1024);
+           (allocated * 100) / rtems_malloc_stats.space_available,
+           (unsigned int) rtems_malloc_stats.max_depth / 1024,
+           (rtems_malloc_stats.max_depth * 100) / rtems_malloc_stats.space_available,
+           (unsigned64) rtems_malloc_stats.lifetime_allocated / 1024,
+           (unsigned64) rtems_malloc_stats.lifetime_freed / 1024);
     printf("  Call counts:   malloc:%d   free:%d   realloc:%d   calloc:%d\n",
-           malloc_stats.malloc_calls,
-           malloc_stats.free_calls,
-           malloc_stats.realloc_calls,
-           malloc_stats.calloc_calls);
+           rtems_malloc_stats.malloc_calls,
+           rtems_malloc_stats.free_calls,
+           rtems_malloc_stats.realloc_calls,
+           rtems_malloc_stats.calloc_calls);
 }
 
 
@@ -366,7 +387,7 @@ void malloc_walk(size_t source, size_t printf_enabled)
  */
 
 #ifdef RTEMS_NEWLIB
-void *malloc_r(
+void *_malloc_r(
   struct _reent *ignored,
   size_t  size
 )
@@ -374,7 +395,8 @@ void *malloc_r(
   return malloc( size );
 }
 
-void *calloc_r(
+void *_calloc_r(
+  struct _reent *ignored,
   size_t nelem,
   size_t elsize
 )
@@ -382,15 +404,17 @@ void *calloc_r(
   return calloc( nelem, elsize );
 }
 
-void *realloc_r(
+void *_realloc_r(
+  struct _reent *ignored,
   void *ptr,
   size_t size
 )
 {
-  return realloc_r( ptr, size );
+  return realloc( ptr, size );
 }
 
-void free_r(
+void _free_r(
+  struct _reent *ignored,
   void *ptr
 )
 {

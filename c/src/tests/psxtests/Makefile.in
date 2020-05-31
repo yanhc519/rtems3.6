@@ -1,0 +1,16 @@
+#
+#  $Id$
+#
+
+@SET_MAKE@
+srcdir = @srcdir@
+VPATH = @srcdir@
+RTEMS_ROOT = @top_srcdir@
+PROJECT_ROOT = @PROJECT_ROOT@
+
+include $(RTEMS_ROOT)/make/custom/$(RTEMS_BSP).cfg
+include $(RTEMS_ROOT)/make/directory.cfg
+
+SUB_DIRS=support psxhdrs psx01 psx02 psx03 psx04 psx05 psx06 psx07 psx08 \
+   psx09 psx10 psx11 psx12
+

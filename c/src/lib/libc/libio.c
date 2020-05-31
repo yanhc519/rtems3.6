@@ -10,6 +10,7 @@
 
 #include <stdio.h>                      /* O_RDONLY, et.al. */
 #include <fcntl.h>                      /* O_RDONLY, et.al. */
+#include <assert.h>
 
 #if ! defined(O_NDELAY)
 # if defined(solaris2)
@@ -36,7 +37,7 @@ Objects_Id rtems_libio_semaphore;
 #define RTEMS_LIBIO_SEM         rtems_build_name('L', 'B', 'I', 'O')
 #define RTEMS_LIBIO_IOP_SEM(n)  rtems_build_name('L', 'B', 'I', n)
 
-unsigned32     rtems_libio_number_iops;
+extern unsigned32     rtems_libio_number_iops;
 rtems_libio_t *rtems_libio_iops;
 rtems_libio_t *rtems_libio_last_iop;
 
@@ -45,7 +46,7 @@ rtems_libio_t *rtems_libio_last_iop;
 
 #define rtems_libio_check_fd(fd) \
     do { \
-        if ((fd) >= rtems_libio_number_iops) \
+        if ((unsigned32) (fd) >= rtems_libio_number_iops) \
         { \
             errno = EBADF; \
             return -1; \
@@ -78,22 +79,26 @@ rtems_libio_t *rtems_libio_last_iop;
         } \
     } while (0)
 
+/*
+ * External I/O handlers
+ * 
+ * Space for all possible handlers is preallocated
+ * to speed up dispatch to external handlers.
+ */
+
+static rtems_libio_handler_t handlers[15];
 
 void
-rtems_libio_config(
-    rtems_configuration_table *config,
-    unsigned32                 max_fds
-  )
+rtems_register_libio_handler(
+    int                         handler_flag,
+    const rtems_libio_handler_t *handler
+)
 {
-    rtems_libio_number_iops = max_fds;
+  int handler_index = rtems_file_descriptor_type_index(handler_flag);
 
-    /*
-     * tweak config to reflect # of semaphores we will need
-     */
-
-    /* one for iop table */
-    config->RTEMS_api_configuration->maximum_semaphores += 1; 
-    config->RTEMS_api_configuration->maximum_semaphores += max_fds;
+  if ((handler_index < 0) || (handler_index >= 15))
+    rtems_fatal_error_occurred( RTEMS_INVALID_NUMBER );
+  handlers[handler_index] = *handler;
 }
 
 /*
@@ -131,9 +136,16 @@ rtems_libio_init(void)
  */
 
 rtems_assoc_t errno_assoc[] = {
-    { "OK",        RTEMS_SUCCESSFUL,       0 },
-    { "TIMEOUT",   RTEMS_TIMEOUT,          ETIME },
-    { "NO MEMORY", RTEMS_NO_MEMORY,        ENOMEM },
+    { "OK",                 RTEMS_SUCCESSFUL,                0 },
+    { "BUSY",               RTEMS_RESOURCE_IN_USE,           EBUSY },
+    { "INVALID NAME",       RTEMS_INVALID_NAME,              EINVAL },
+    { "NOT IMPLEMENTED",    RTEMS_NOT_IMPLEMENTED,           ENOSYS },
+    { "TIMEOUT",            RTEMS_TIMEOUT,                   ETIMEDOUT },
+    { "NO MEMORY",          RTEMS_NO_MEMORY,                 ENOMEM },
+    { "NO DEVICE",          RTEMS_UNSATISFIED,               ENODEV },
+    { "INVALID NUMBER",     RTEMS_INVALID_NUMBER,            EBADF},
+    { "NOT RESOURCE OWNER", RTEMS_NOT_OWNER_OF_RESOURCE,     EPERM},
+    { "IO ERROR",           RTEMS_IO_ERROR,                  EIO},
     { 0, 0, 0 },
 };
 
@@ -147,7 +159,7 @@ rtems_libio_errno(rtems_status_code code)
         errno = rc;
         return -1;
     }
-    return 0;
+    return -1;
 }
 
 /*
@@ -155,8 +167,8 @@ rtems_libio_errno(rtems_status_code code)
  */
 
 rtems_assoc_t access_modes_assoc[] = {
-    { "READ",     LIBIO_FLAGS_READ,  O_RDONLY },
-    { "WRITE",    LIBIO_FLAGS_WRITE, O_WRONLY },
+    { "READ",       LIBIO_FLAGS_READ,  O_RDONLY },
+    { "WRITE",      LIBIO_FLAGS_WRITE, O_WRONLY },
     { "READ/WRITE", LIBIO_FLAGS_READ_WRITE, O_RDWR },
     { 0, 0, 0 },
 };
@@ -241,7 +253,7 @@ rtems_libio_free(rtems_libio_t *iop)
 }
 
 int
-__open(
+__rtems_open(
     const char   *pathname,
     unsigned32    flag,
     unsigned32    mode)
@@ -250,6 +262,14 @@ __open(
     rtems_libio_t *iop = 0;
     rtems_driver_name_t *np;
     rtems_libio_open_close_args_t args;
+
+    /*
+     * Additional external I/O handlers would be supported by
+     * adding code to pick apart the pathname appropriately.
+     * The networking code does not require changes here since
+     * network file descriptors are obtained using socket(), not
+     * open().
+     */
 
     if ((rc = rtems_io_lookup_name(pathname, &np)) != RTEMS_SUCCESSFUL)
         goto done;
@@ -272,6 +292,7 @@ __open(
     rc = rtems_io_open(np->major, np->minor, (void *) &args);
     
 done:
+  
     if (rc != RTEMS_SUCCESSFUL)
     {
         if (iop)
@@ -283,15 +304,28 @@ done:
 }
     
 int
-__close(
+__rtems_close(
     int  fd
   )    
 {
     rtems_status_code rc;
     rtems_driver_name_t *np;
-    rtems_libio_t *iop = rtems_libio_iop(fd);
+    rtems_libio_t *iop;
     rtems_libio_open_close_args_t args;
+    int status;
 
+    if (rtems_file_descriptor_type(fd)) {
+        int (*fp)(int fd);
+
+        fp = handlers[rtems_file_descriptor_type_index(fd)].close;
+        if (fp == NULL) {
+            errno = EBADF;
+            return -1;
+        }
+        status = (*fp)(fd);
+        return status;
+    }
+    iop = rtems_libio_iop(fd);
     rtems_libio_check_fd(fd);
 
     np = iop->driver;
@@ -302,13 +336,15 @@ __close(
     
     rc = rtems_io_close(np->major, np->minor, (void *) &args);
 
+    rtems_libio_free(iop);
+
     if (rc != RTEMS_SUCCESSFUL)
         return rtems_libio_errno(rc);
     return 0;
 }
     
 int
-__read(
+__rtems_read(
     int       fd,
     void *    buffer,
     unsigned32 count
@@ -316,9 +352,20 @@ __read(
 {
     rtems_status_code rc;
     rtems_driver_name_t *np;
-    rtems_libio_t *iop = rtems_libio_iop(fd);
+    rtems_libio_t *iop;
     rtems_libio_rw_args_t args;
 
+    if (rtems_file_descriptor_type(fd)) {
+        int (*fp)(int fd, void *buffer, unsigned32 count);
+
+        fp = handlers[rtems_file_descriptor_type_index(fd)].read;
+        if (fp == NULL) {
+            errno = EBADF;
+            return -1;
+        }
+        return (*fp)(fd, buffer, count);
+    }
+    iop = rtems_libio_iop(fd);
     rtems_libio_check_fd(fd);
     rtems_libio_check_buffer(buffer);
     rtems_libio_check_count(count);
@@ -344,7 +391,7 @@ __read(
 }
 
 int
-__write(
+__rtems_write(
     int         fd,
     const void *buffer,
     unsigned32  count
@@ -352,9 +399,20 @@ __write(
 {
     rtems_status_code rc;
     rtems_driver_name_t *np;
-    rtems_libio_t *iop = rtems_libio_iop(fd);
+    rtems_libio_t *iop;
     rtems_libio_rw_args_t args;
 
+    if (rtems_file_descriptor_type(fd)) {
+        int (*fp)(int fd, const void *buffer, unsigned32 count);
+
+        fp = handlers[rtems_file_descriptor_type_index(fd)].write;
+        if (fp == NULL) {
+            errno = EBADF;
+            return -1;
+        }
+        return (*fp)(fd, buffer, count);
+    }
+    iop = rtems_libio_iop(fd);
     rtems_libio_check_fd(fd);
     rtems_libio_check_buffer(buffer);
     rtems_libio_check_count(count);
@@ -380,16 +438,27 @@ __write(
 }
 
 int
-__ioctl(
+__rtems_ioctl(
     int         fd,
     unsigned32  command,
     void *      buffer)
 {
     rtems_status_code rc;
     rtems_driver_name_t *np;
-    rtems_libio_t *iop = rtems_libio_iop(fd);
+    rtems_libio_t *iop;
     rtems_libio_ioctl_args_t args;
 
+    if (rtems_file_descriptor_type(fd)) {
+        int (*fp)(int fd, unsigned32 command, void *buffer);
+
+        fp = handlers[rtems_file_descriptor_type_index(fd)].ioctl;
+        if (fp == NULL) {
+            errno = EBADF;
+            return -1;
+        }
+        return (*fp)(fd, command, buffer);
+    }
+    iop = rtems_libio_iop(fd);
     rtems_libio_check_fd(fd);
 
     np = iop->driver;
@@ -412,14 +481,25 @@ __ioctl(
 
 
 int
-__lseek(
+__rtems_lseek(
     int                  fd,
     rtems_libio_offset_t offset,
     int                  whence
   )    
 {
-    rtems_libio_t *iop = rtems_libio_iop(fd);
+    rtems_libio_t *iop;
 
+    if (rtems_file_descriptor_type(fd)) {
+        int (*fp)(int fd, rtems_libio_offset_t offset, int whence);
+
+        fp = handlers[rtems_file_descriptor_type_index(fd)].lseek;
+        if (fp == NULL) {
+            errno = EBADF;
+            return -1;
+        }
+        return (*fp)(fd, offset, whence);
+    }
+    iop = rtems_libio_iop(fd);
     rtems_libio_check_fd(fd);
 
     switch (whence)

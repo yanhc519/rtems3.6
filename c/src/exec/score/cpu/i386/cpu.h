@@ -3,13 +3,13 @@
  *  This include file contains information pertaining to the Intel
  *  i386 processor.
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -21,10 +21,12 @@
 extern "C" {
 #endif
 
+#include <rtems/score/i386.h>              /* pick up machine definitions */
+#include <libcpu/cpu.h>
+
 #ifndef ASM
 #include <rtems/score/i386types.h>
 #endif
-#include <rtems/score/i386.h>
 
 /* conditional compilation parameters */
 
@@ -38,6 +40,14 @@ extern "C" {
 #define CPU_HAS_SOFTWARE_INTERRUPT_STACK TRUE
 #define CPU_HAS_HARDWARE_INTERRUPT_STACK FALSE
 #define CPU_ALLOCATE_INTERRUPT_STACK     TRUE
+
+/*
+ *  Does the RTEMS invoke the user's ISR with the vector number and
+ *  a pointer to the saved interrupt frame (1) or just the vector 
+ *  number (0)?
+ */
+
+#define CPU_ISR_PASSES_FRAME_POINTER 0
 
 /*
  *  Some family members have no FP, some have an FPU such as the i387
@@ -54,9 +64,30 @@ extern "C" {
 #define CPU_IDLE_TASK_IS_FP              FALSE
 #define CPU_USE_DEFERRED_FP_SWITCH       TRUE
 
-#define CPU_PROVIDES_IDLE_THREAD_BODY    FALSE
 #define CPU_STACK_GROWS_UP               FALSE
 #define CPU_STRUCTURE_ALIGNMENT
+
+/*
+ *  Does this port provide a CPU dependent IDLE task implementation?
+ *  
+ *  If TRUE, then the routine _CPU_Thread_Idle_body
+ *  must be provided and is the default IDLE thread body instead of
+ *  _CPU_Thread_Idle_body.
+ *
+ *  If FALSE, then use the generic IDLE thread body if the BSP does
+ *  not provide one.
+ */
+ 
+#define CPU_PROVIDES_IDLE_THREAD_BODY    TRUE
+
+/*
+ *  Define what is required to specify how the network to host conversion
+ *  routines are handled.
+ */
+
+#define CPU_CPU_HAS_OWN_HOST_TO_NETWORK_ROUTINES FALSE
+#define CPU_BIG_ENDIAN                           FALSE
+#define CPU_LITTLE_ENDIAN                        TRUE
 
 /* structures */
 
@@ -82,14 +113,65 @@ typedef struct {
                                     /*  28 bytes for environment    */
 } Context_Control_fp;
 
+
 /*
  *  The following structure defines the set of information saved
- *  on the current stack by RTEMS upon receipt of each interrupt.
+ *  on the current stack by RTEMS upon receipt of execptions.
+ *
+ * idtIndex is either the interrupt number or the trap/exception number.
+ * faultCode is the code pushed by the processor on some exceptions.
  */
 
 typedef struct {
-  unsigned32   TBD;   /* XXX Fix for this CPU */
-} CPU_Interrupt_frame;
+  unsigned32  edi;
+  unsigned32  esi;
+  unsigned32  ebp;
+  unsigned32  esp0;
+  unsigned32  ebx;
+  unsigned32  edx;
+  unsigned32  ecx;
+  unsigned32  eax;
+  unsigned32  idtIndex;
+  unsigned32  faultCode;
+  unsigned32  eip;
+  unsigned32  cs;
+  unsigned32  eflags;
+} CPU_Exception_frame;
+
+typedef void (*cpuExcHandlerType) (CPU_Exception_frame*);
+extern cpuExcHandlerType _currentExcHandler;
+extern void rtems_exception_init_mngt();
+
+/*
+ *  The following structure defines the set of information saved
+ *  on the current stack by RTEMS upon receipt of each interrupt
+ *  that will lead to re-enter the kernel to signal the thread.
+ */
+
+typedef CPU_Exception_frame CPU_Interrupt_frame;
+
+typedef enum {
+  DIVIDE_BY_ZERO	=	0,
+  DEBUG			=	1,
+  NMI			=	2,
+  BREAKPOINT		=	3,
+  OVERFLOW		=	4,
+  BOUND			=	5,
+  ILLEGAL_INSTR		=	6,
+  MATH_COPROC_UNAVAIL	=	7,
+  DOUBLE_FAULT		=	8,
+  I386_COPROC_SEG_ERR	=	9,
+  INVALID_TSS		=	10,
+  SEGMENT_NOT_PRESENT	=	11,
+  STACK_SEGMENT_FAULT	=	12,
+  GENERAL_PROT_ERR	=	13,
+  PAGE_FAULT		=	14,
+  INTEL_RES15		=	15,
+  FLOAT_ERROR		=	16,
+  ALIGN_CHECK		=	17,
+  MACHINE_CHECK		=	18
+} Intel_symbolic_exception_name;
+  
 
 /*
  *  The following table contains the information required to configure
@@ -102,6 +184,7 @@ typedef struct {
   void       (*postdriver_hook)( void );
   void       (*idle_task)( void );
   boolean      do_zero_of_workspace;
+  unsigned32   idle_task_stack_size;
   unsigned32   interrupt_stack_size;
   unsigned32   extra_mpci_receive_server_stack;
   void *     (*stack_allocate_hook)( unsigned32 );
@@ -341,6 +424,18 @@ void _CPU_ISR_install_vector(
 );
 
 /*
+ *  _CPU_Thread_Idle_body
+ *
+ *  Use the halt instruction of low power mode of a particular i386 model.
+ */
+
+#if (CPU_PROVIDES_IDLE_THREAD_BODY == TRUE)
+
+void _CPU_Thread_Idle_body( void );
+
+#endif /* CPU_PROVIDES_IDLE_THREAD_BODY */
+
+/*
  *  _CPU_Context_switch
  *
  *  This routine switches from the run context to the heir context.
@@ -354,7 +449,7 @@ void _CPU_Context_switch(
 /*
  *  _CPU_Context_restore
  *
- *  This routine is generallu used only to restart self in an
+ *  This routine is generally used only to restart self in an
  *  efficient manner and avoid stack conflicts.
  */
 

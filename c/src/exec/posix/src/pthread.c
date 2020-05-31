@@ -77,7 +77,7 @@ void _POSIX_Threads_Sporadic_budget_TSR(
 
   if ( the_thread->resource_count == 0 ||
        the_thread->current_priority > new_priority )
-    _Thread_Change_priority( the_thread, new_priority );
+    _Thread_Change_priority( the_thread, new_priority, TRUE );
 
   ticks = _POSIX_Timespec_to_interval( &api->schedparam.ss_replenish_period );
 
@@ -114,7 +114,7 @@ void _POSIX_Threads_Sporadic_budget_callout(
 
  if ( the_thread->resource_count == 0 ||
       the_thread->current_priority > new_priority )
-    _Thread_Change_priority( the_thread, new_priority );
+    _Thread_Change_priority( the_thread, new_priority, TRUE );
 }
 
 /*PAGE
@@ -265,7 +265,7 @@ void _POSIX_Threads_Initialize_user_threads( void )
     status = pthread_create(
       &thread_id,
       &attr,
-      user_threads[ index ].entry,
+      user_threads[ index ].thread_entry,
       NULL
     );
     assert( !status );
@@ -656,7 +656,11 @@ int pthread_setschedparam(
           the_thread->real_priority =
             _POSIX_Priority_To_core( api->schedparam.sched_priority );
 
-          _Thread_Change_priority( the_thread, the_thread->real_priority );
+          _Thread_Change_priority(
+             the_thread,
+             the_thread->real_priority,
+             TRUE
+          );
           break;
  
         case SCHED_SPORADIC:
@@ -994,7 +998,7 @@ int pthread_create(
   api = the_thread->API_Extensions[ THREAD_API_POSIX ];
 
   api->Attributes  = *the_attr;
-  api->detachstate = attr->detachstate;
+  api->detachstate = the_attr->detachstate;
   api->schedpolicy = schedpolicy;
   api->schedparam  = schedparam;
 
@@ -1140,11 +1144,15 @@ void pthread_exit(
   void  *value_ptr
 )
 {
+  Objects_Information     *the_information;
+
+  the_information = _Objects_Get_information( _Thread_Executing->Object.id );
+  
   _Thread_Disable_dispatch();
 
   _Thread_Executing->Wait.return_argument = (unsigned32 *)value_ptr;
 
-  _Thread_Close( &_POSIX_Threads_Information, _Thread_Executing );
+  _Thread_Close( the_information, _Thread_Executing );
 
   _POSIX_Threads_Free( _Thread_Executing );
 

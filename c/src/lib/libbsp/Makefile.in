@@ -1,0 +1,31 @@
+#
+#  $Id$
+#
+
+@SET_MAKE@
+srcdir = @srcdir@
+VPATH = @srcdir@
+RTEMS_ROOT = @top_srcdir@
+PROJECT_ROOT = @PROJECT_ROOT@
+
+include $(RTEMS_ROOT)/make/custom/$(RTEMS_BSP).cfg
+include $(RTEMS_ROOT)/make/directory.cfg
+
+# shmdr is a portable shared memory MPCI layer
+# We only build it if HAS_MP was defined
+MP_DRIVERS_yes_V = shmdr
+MP_DRIVERS = $(MP_DRIVERS_$(HAS_MP)_V)
+
+SUB_DIRS=$(MP_DRIVERS)
+
+# If we are building a "real" BSP, then we need to descend into the
+# appropriate CPU specific directory.  The bare BSP is a special
+# case which can be built for any CPU and it resides at the same
+# level as the CPUs.  If we are building the bare BSP, then descend
+# into that directory.
+
+ifeq ($(RTEMS_BSP),bare)
+SUB_DIRS += bare
+else
+SUB_DIRS += $(wildcard $(RTEMS_CPU))
+endif

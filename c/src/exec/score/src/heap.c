@@ -1,13 +1,13 @@
 /*
  *  Heap Handler
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -499,8 +499,8 @@ void _Heap_Walk(
       if ( the_block->front_flag != next_block->back_flag ) {
         error = 1;
         printf("PASS: %d  Front and back flags don't match\n", source);
-        printf("         Current Block:  Back - %d,  Front - %d",
-               the_block->back_flag, the_block->front_flag);
+        printf("         Current Block (%p):  Back - %d,  Front - %d",
+               the_block, the_block->back_flag, the_block->front_flag);
         if (do_dump == TRUE) {
           if (_Heap_Is_block_free(the_block)) {
             printf("      Prev 0x%p,   Next 0x%p\n",
@@ -511,8 +511,8 @@ void _Heap_Walk(
         } else {
           printf("\n");
         }
-        printf("         Next Block:     Back - %d,  Front - %d",
-               next_block->back_flag, next_block->front_flag);
+        printf("         Next Block (%p):     Back - %d,  Front - %d",
+               next_block, next_block->back_flag, next_block->front_flag);
         if (do_dump == TRUE) {
           if (_Heap_Is_block_free(next_block)) {
             printf("      Prev 0x%p,   Next 0x%p\n",

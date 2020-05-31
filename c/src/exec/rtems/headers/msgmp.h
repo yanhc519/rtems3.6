@@ -3,13 +3,13 @@
  *  This include file contains all the constants and structures associated
  *  with the Multiprocessing Support in the Message Manager.
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -34,19 +34,21 @@ extern "C" {
  */
 
 typedef enum {
-  MESSAGE_QUEUE_MP_ANNOUNCE_CREATE     =  0,
-  MESSAGE_QUEUE_MP_ANNOUNCE_DELETE     =  1,
-  MESSAGE_QUEUE_MP_EXTRACT_PROXY       =  2,
-  MESSAGE_QUEUE_MP_RECEIVE_REQUEST     =  3,
-  MESSAGE_QUEUE_MP_RECEIVE_RESPONSE    =  4,
-  MESSAGE_QUEUE_MP_SEND_REQUEST        =  5,
-  MESSAGE_QUEUE_MP_SEND_RESPONSE       =  6,
-  MESSAGE_QUEUE_MP_URGENT_REQUEST      =  7,
-  MESSAGE_QUEUE_MP_URGENT_RESPONSE     =  8,
-  MESSAGE_QUEUE_MP_BROADCAST_REQUEST   =  9,
-  MESSAGE_QUEUE_MP_BROADCAST_RESPONSE  = 10,
-  MESSAGE_QUEUE_MP_FLUSH_REQUEST       = 11,
-  MESSAGE_QUEUE_MP_FLUSH_RESPONSE      = 12
+  MESSAGE_QUEUE_MP_ANNOUNCE_CREATE             =  0,
+  MESSAGE_QUEUE_MP_ANNOUNCE_DELETE             =  1,
+  MESSAGE_QUEUE_MP_EXTRACT_PROXY               =  2,
+  MESSAGE_QUEUE_MP_RECEIVE_REQUEST             =  3,
+  MESSAGE_QUEUE_MP_RECEIVE_RESPONSE            =  4,
+  MESSAGE_QUEUE_MP_SEND_REQUEST                =  5,
+  MESSAGE_QUEUE_MP_SEND_RESPONSE               =  6,
+  MESSAGE_QUEUE_MP_URGENT_REQUEST              =  7,
+  MESSAGE_QUEUE_MP_URGENT_RESPONSE             =  8,
+  MESSAGE_QUEUE_MP_BROADCAST_REQUEST           =  9,
+  MESSAGE_QUEUE_MP_BROADCAST_RESPONSE          = 10,
+  MESSAGE_QUEUE_MP_FLUSH_REQUEST               = 11,
+  MESSAGE_QUEUE_MP_FLUSH_RESPONSE              = 12,
+  MESSAGE_QUEUE_MP_GET_NUMBER_PENDING_REQUEST  = 13,
+  MESSAGE_QUEUE_MP_GET_NUMBER_PENDING_RESPONSE = 14
 }   Message_queue_MP_Remote_operations;
 
 /*

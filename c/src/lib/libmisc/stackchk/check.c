@@ -6,13 +6,13 @@
  *         CPU grows up or down and installs the correct
  *         extension routines for that direction.
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  *
@@ -147,8 +147,10 @@ unsigned32 stack_check_initialized = 0;
 
 void Stack_check_Initialize( void )
 {
+#if 0
   rtems_status_code    status;
   Objects_Id           id_ignored;
+#endif
   unsigned32          *p;
 #if 0
   unsigned32           i;
@@ -175,12 +177,14 @@ void Stack_check_Initialize( void )
       p[3] = 0x600D0D06;
   };
 
+#if 0
   status = rtems_extension_create(
     rtems_build_name( 'S', 'T', 'C', 'K' ),
     &Stack_check_Extension_table,
     &id_ignored
   );
   assert ( status == RTEMS_SUCCESSFUL );
+#endif
 
   Stack_check_Blown_task = 0;
 
@@ -254,6 +258,9 @@ boolean Stack_check_Create_extension(
   Thread_Control *the_thread
 )
 {
+    if (!stack_check_initialized)
+      Stack_check_Initialize();
+
     if (the_thread /* XXX && (the_thread != _Thread_Executing) */ )
         stack_check_dope_stack(&the_thread->Start.Initial_stack);
 
@@ -270,6 +277,9 @@ void Stack_check_Begin_extension(
 )
 {
   Stack_check_Control  *the_pattern;
+
+  if (!stack_check_initialized)
+    Stack_check_Initialize();
 
   if ( the_thread->Object.id == 0 )        /* skip system tasks */
     return;
@@ -408,6 +418,9 @@ void Stack_check_Dump_threads_usage(
   void           *low;
   void           *high_water_mark;
   Stack_Control  *stack;
+  unsigned32      u32_name;
+  char            name[5];
+
 
   if ( !the_thread )
     return;
@@ -439,10 +452,20 @@ void Stack_check_Dump_threads_usage(
   else
     used = 0;
 
-  printf( "0x%08x  0x%08x  0x%08x  0x%08x   %8d   %8d\n",
+  if ( the_thread )
+    u32_name = *(unsigned32 *)the_thread->Object.name;
+  else
+    u32_name = rtems_build_name('I', 'N', 'T', 'R');
+
+  name[ 0 ] = (u32_name >> 24) & 0xff;
+  name[ 1 ] = (u32_name >> 16) & 0xff;
+  name[ 2 ] = (u32_name >>  8) & 0xff;
+  name[ 3 ] = (u32_name >>  0) & 0xff;
+  name[ 4 ] = '\0';
+
+  printf( "0x%08x  %4s  0x%08x  0x%08x   %8d   %8d\n",
           the_thread ? the_thread->Object.id : ~0,
-          the_thread ? *(unsigned32 *)the_thread->Object.name :
-                       rtems_build_name('I', 'N', 'T', 'R'),
+          name,
           (unsigned32) stack->area,
           (unsigned32) stack->area + (unsigned32) stack->size - 1,
           size,
@@ -486,7 +509,7 @@ void Stack_check_Dump_usage( void )
 
   printf("Stack usage by thread\n");
   printf(
-    "   ID          NAME         LOW        HIGH      AVAILABLE     USED\n"
+    "    ID      NAME       LOW        HIGH     AVAILABLE      USED\n"
   );
 
   for ( class_index = OBJECTS_CLASSES_FIRST ; 

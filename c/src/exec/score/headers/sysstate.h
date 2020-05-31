@@ -2,13 +2,13 @@
  *
  *  This include file contains information regarding the system state.
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -33,6 +33,7 @@ typedef enum {
   SYSTEM_STATE_BEFORE_MULTITASKING,     /* end of 1st -> beginning of 2nd */
   SYSTEM_STATE_BEGIN_MULTITASKING,      /* just before multitasking starts */
   SYSTEM_STATE_UP,                      /* normal operation */
+  SYSTEM_STATE_SHUTDOWN,                /* shutdown */
   SYSTEM_STATE_FAILED                   /* fatal error occurred */
 } System_state_Codes;
 

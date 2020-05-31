@@ -2,13 +2,13 @@
  *
  *  This include file contains all efi332 board IO definitions.
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -71,10 +71,27 @@ extern "C" {
                   : "0"  (_tmp), "1"  (_delay) ); \
   }
 
-/* macros */
+/* externals */
 
-#define RAM_START 0x80000
-#define RAM_END   0xc0000
+extern char _endtext[];
+extern char _sdata[];
+extern char _edata[];
+extern char __bss_start[];
+extern char _end[];
+extern char _copy_data_from_rom[];
+extern char __end_of_ram[];
+
+/* constants */
+
+#define RAM_END ((int)__end_of_ram)
+
+#ifdef __START_C__
+#define STACK_SIZE "#0x800"
+#else
+#define STACK_SIZE 0x800
+#endif
+
+/* macros */
 
 #define RAW_PUTS(str) \
   { register char *ptr = str; \
@@ -112,12 +129,6 @@ extern int stack_start;
 /*
  * NOTE: Use the standard Clock driver entry
  */
-
-/*
- * How many libio files we want
- */
- 
-#define BSP_LIBIO_MAX_FDS       20
 
 /* functions */
 

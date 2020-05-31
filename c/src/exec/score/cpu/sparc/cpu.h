@@ -3,13 +3,13 @@
  *  This include file contains information pertaining to the port of 
  *  the executive to the SPARC processor.
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  Ported to ERC32 implementation of the SPARC by On-Line Applications
  *  Research Corporation (OAR) under contract to the European Space 
@@ -92,6 +92,14 @@ extern "C" {
  */
 
 #define CPU_ALLOCATE_INTERRUPT_STACK      TRUE
+
+/*
+ *  Does the RTEMS invoke the user's ISR with the vector number and
+ *  a pointer to the saved interrupt frame (1) or just the vector 
+ *  number (0)?
+ */
+
+#define CPU_ISR_PASSES_FRAME_POINTER 0
 
 /*
  *  Does the CPU have hardware floating point?
@@ -183,6 +191,15 @@ extern "C" {
  */
 
 #define CPU_STRUCTURE_ALIGNMENT          __attribute__ ((aligned (16)))
+
+/*
+ *  Define what is required to specify how the network to host conversion
+ *  routines are handled.
+ */
+
+#define CPU_CPU_HAS_OWN_HOST_TO_NETWORK_ROUTINES FALSE
+#define CPU_BIG_ENDIAN                           TRUE
+#define CPU_LITTLE_ENDIAN                        FALSE
 
 /*
  *  The following defines the number of bits actually used in the
@@ -500,6 +517,7 @@ typedef struct {
   void       (*postdriver_hook)( void );
   void       (*idle_task)( void );
   boolean      do_zero_of_workspace;
+  unsigned32   idle_task_stack_size;
   unsigned32   interrupt_stack_size;
   unsigned32   extra_mpci_receive_server_stack;
   void *     (*stack_allocate_hook)( unsigned32 );
@@ -585,8 +603,11 @@ extern const CPU_Trap_table_entry _CPU_Trap_slot_template;
  
 #define SPARC_TRAP_TABLE_ALIGNMENT 4096
  
+#ifndef NO_TABLE_MOVE
+
 SCORE_EXTERN unsigned8 _CPU_Trap_Table_area[ 8192 ]
            __attribute__ ((aligned (SPARC_TRAP_TABLE_ALIGNMENT)));
+#endif
  
 
 /*
@@ -920,7 +941,7 @@ void _CPU_Context_switch(
 /*
  *  _CPU_Context_restore
  *
- *  This routine is generallu used only to restart self in an
+ *  This routine is generally used only to restart self in an
  *  efficient manner.
  */
 
@@ -981,6 +1002,9 @@ static inline unsigned int CPU_swap_u32(
   swapped = (byte1 << 24) | (byte2 << 16) | (byte3 << 8) | byte4;
   return( swapped );
 }
+
+#define CPU_swap_u16( value ) \
+  (((value&0xff) << 8) | ((value >> 8)&0xff))
 
 #endif ASM
 

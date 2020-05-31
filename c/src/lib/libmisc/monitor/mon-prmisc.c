@@ -8,7 +8,7 @@
  */
 
 #include <rtems.h>
-#include "monitor.h"
+#include <rtems/monitor.h>
 
 #include <rtems/assoc.h>
 
@@ -95,7 +95,7 @@ rtems_monitor_dump_id(rtems_id id)
 unsigned32
 rtems_monitor_dump_name(rtems_name name)
 {
-    int i;
+    unsigned32 i;
     unsigned32 length = 0;
     union {
         unsigned32 ui;
@@ -104,8 +104,13 @@ rtems_monitor_dump_name(rtems_name name)
     
     u.ui = (rtems_unsigned32) name;
     
+#if (CPU_BIG_ENDIAN == TRUE)
     for (i=0; i<sizeof(u.c); i++)
         length += rtems_monitor_dump_char(u.c[i]);
+#else
+    for (i=sizeof(u.c)-1; i ; i--)
+        length += rtems_monitor_dump_char(u.c[i]);
+#endif
     return length;
 }
 

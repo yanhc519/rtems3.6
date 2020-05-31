@@ -22,7 +22,7 @@
 #define __RTEMS_VIOLATE_KERNEL_VISIBILITY__
 #include <rtems.h>
 
-#include "monitor.h"
+#include <rtems/monitor.h>
 
 #include <stdio.h>
 #include <stdlib.h>             /* strtoul() */
@@ -51,9 +51,9 @@ rtems_monitor_dname_next(
     rtems_id               *next_id
 )
 {
-    int n = rtems_get_index(*next_id);
-    rtems_driver_name_t    *table = _IO_Driver_name_table;
-    rtems_driver_name_t    *np = 0;
+    rtems_unsigned32      n = rtems_get_index(*next_id);
+    rtems_driver_name_t  *table = _IO_Driver_name_table;
+    rtems_driver_name_t  *np = 0;
 
 /* XXX should we be using _IO_Number_of_devices */
     for (np = table + n ; n<_IO_Number_of_devices; n++, np++)

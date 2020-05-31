@@ -17,7 +17,7 @@
  *  notice.  This file is freely distributable as long as the source
  *  of the file is noted.  This file is:
  *
- *  COPYRIGHT (c) 1994.
+ *  COPYRIGHT (c) 1994-1997.
  *  On-Line Applications Research Corporation (OAR).
  *
  *  $Id$
@@ -30,8 +30,11 @@
  *  Indicate we are in an assembly file and get the basic CPU definitions.
  */
 
+#ifndef ASM
 #define ASM
-#include <rtems/score/m68k.h>
+#endif
+#include <rtems/score/targopts.h>
+#include <rtems/score/cpu.h>
 
 /*
  *  Recent versions of GNU cpp define variables which indicate the
@@ -77,6 +80,7 @@
 #define a5 REG (a5)
 #define a6 REG (a6)
 #define a7 REG (a7)
+#define sp REG (sp)
 
 #define msp REG (msp)
 #define usp REG (usp)
@@ -84,6 +88,15 @@
 #define sr  REG (sr)
 #define vbr REG (vbr)
 #define dfc REG (dfc)
+#define sfc REG (sfc)
+
+/* mcf52xx special regs */
+#define cacr    REG (cacr)
+#define acr0    REG (acr0)
+#define acr1    REG (acr1)
+#define rambar0 REG (rambar0)
+#define mbar    REG (mbar)
+
 
 #define fp0 REG (fp0)
 #define fp1 REG (fp1)
@@ -97,6 +110,8 @@
 #define fpc REG (fpc)
 #define fpi REG (fpi)
 #define fps REG (fps)
+#define fpsr REG (fpsr)
+
 
 /*
  *  Define macros to handle section beginning and ends.
@@ -109,9 +124,9 @@
 #define END_DATA_DCL
 #define BEGIN_CODE .text
 #define END_CODE
-#define BEGIN_DATA
+#define BEGIN_DATA .data
 #define END_DATA
-#define BEGIN_BSS
+#define BEGIN_BSS .bss
 #define END_BSS
 #define END
 

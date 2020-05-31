@@ -1,5 +1,7 @@
 /*
- *  This file contains GNU linker directives for a generic MC68360 board.
+ * This file contains GNU linker directives for a generic MC68360 board.
+ * Variations in memory size and allocation can be made by
+ * overriding some values with linker command-line arguments.
  *
  * Saskatchewan Accelerator Laboratory
  * University of Saskatchewan
@@ -10,27 +12,22 @@
  */
 
 /*
- * Declare on-board memory
- */
-MEMORY {
-          ram : ORIGIN = 0x00000000, LENGTH = 4M
-          rom : ORIGIN = 0xFF000000, LENGTH = 1M
-        dpram : ORIGIN = 0xFE000000, LENGTH = 8k
-}
-
-/*
- * Declare some sizes
+ * Declare some sizes.
  * XXX: The assignment of ". += XyzSize;" fails in older gld's if the
  *      number used there is not constant.  If this happens to you, edit
- *      the lines marked below to use a constant value.
+ *      the lines marked XXX below to use a constant value.
  */
 HeapSize = DEFINED(HeapSize) ? HeapSize : 0x10000;
 StackSize = DEFINED(StackSize) ? StackSize : 0x1000;
 
 /*
- * Declare low-order three octets of Ethernet address
+ * Declare on-board memory.
  */
-ETHERNET_ADDRESS = DEFINED(ETHERNET_ADDRESS) ? ETHERNET_ADDRESS : 0xDEAD12;
+MEMORY {
+          ram : ORIGIN = 0x00000000, LENGTH = 64M
+          rom : ORIGIN = 0x0F000000, LENGTH = 1M
+        dpram : ORIGIN = 0x0E000000, LENGTH = 8k
+}
 
 /*
  * Load objects
@@ -59,6 +56,24 @@ SECTIONS {
                 CREATE_OBJECT_SYMBOLS
                 *(.text)
                 . = ALIGN (16);
+
+		*(.eh_fram)
+		. = ALIGN (16);
+
+		/*
+		 * C++ constructors
+		 */
+		__CTOR_LIST__ = .;
+		LONG((__CTOR_END__ - __CTOR_LIST__) / 4 - 2)
+		*(.ctors)
+		LONG(0)
+		__CTOR_END__ = .;
+		__DTOR_LIST__ = .;
+		LONG((__DTOR_END__ - __DTOR_LIST__) / 4 - 2)
+		*(.dtors)
+		LONG(0)
+		__DTOR_END__ = .;
+
                 etext = .;
                 _etext = .;
         } >ram 

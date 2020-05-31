@@ -1,11 +1,11 @@
 /* 
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -14,7 +14,7 @@
 #include "system.h"
 #include <errno.h>
 
-#define MUTEX_BAD_ID -2
+#define MUTEX_BAD_ID 0xfffffffe 
 
 void Print_mutexattr(
   char                *msg,
@@ -428,7 +428,7 @@ void *POSIX_Init(
  
   /* set priority of Task2 to highest priority */
  
-  param.sched_priority = 255;
+  param.sched_priority = 254;
  
   puts( "Init: pthread_setschedparam - Setting Task2 priority to highest" );
   status = pthread_setschedparam( Task2_id, SCHED_FIFO, &param );
@@ -550,7 +550,7 @@ void *POSIX_Init(
  
   /* set priority of Init to highest priority */
  
-  param.sched_priority = 255;
+  param.sched_priority = 254;
  
   status = pthread_setschedparam( Init_id, SCHED_FIFO, &param );
   assert( !status );

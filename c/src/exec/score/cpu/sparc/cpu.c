@@ -1,13 +1,13 @@
 /*
  *  SPARC Dependent Source
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  Ported to ERC32 implementation of the SPARC by On-Line Applications
  *  Research Corporation (OAR) under contract to the European Space 
@@ -65,6 +65,8 @@ void _CPU_Initialize(
 )
 {
   void                  *pointer;
+
+#ifndef NO_TABLE_MOVE
   unsigned32             trap_table_start;
   unsigned32             tbr_value;
   CPU_Trap_table_entry  *old_tbr;
@@ -77,6 +79,7 @@ void _CPU_Initialize(
    *  and overflow handlers.  It is the responsibility of the BSP to provide
    *  install these in the initial trap table.
    */
+
  
   trap_table_start = (unsigned32) &_CPU_Trap_Table_area;
   if (trap_table_start & (SPARC_TRAP_TABLE_ALIGNMENT-1))
@@ -92,6 +95,8 @@ void _CPU_Initialize(
   memcpy( trap_table, (void *) old_tbr, 256 * sizeof( CPU_Trap_table_entry ) );
 
   sparc_set_tbr( trap_table_start );
+
+#endif
 
   /*
    *  This seems to be the most appropriate way to obtain an initial

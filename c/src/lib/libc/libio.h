@@ -13,6 +13,8 @@
 #ifndef _RTEMS_LIBIO_H
 #define _RTEMS_LIBIO_H
 
+#include <sys/stat.h>
+
 typedef unsigned32 rtems_libio_offset_t;
 
 /*
@@ -30,7 +32,7 @@ typedef struct {
     char                *pathname;      /* opened pathname */
     Objects_Id           sem;
     unsigned32           data0;         /* private to "driver" */
-    unsigned32           data1;         /* ... */
+    void                *data1;         /* ... */
 } rtems_libio_t;
 
 
@@ -85,14 +87,80 @@ typedef struct {
 
 #define LIBIO_FLAGS_READ_WRITE    (LIBIO_FLAGS_READ | LIBIO_FLAGS_WRITE)
 
-void rtems_libio_config(rtems_configuration_table *config, unsigned32 max_fds);
 void rtems_libio_init(void);
 
-int __open(const char  *pathname, unsigned32 flag, unsigned32 mode);
-int __close(int  fd);
-int __read(int fd, void *buffer, unsigned32 count);
-int __write(int fd, const void *buffer, unsigned32 count);
-int __ioctl(int fd, unsigned32  command, void *buffer);
-int __lseek(int fd, rtems_libio_offset_t offset, int whence);
+int __rtems_open(const char  *pathname, unsigned32 flag, unsigned32 mode);
+int __rtems_close(int  fd);
+int __rtems_read(int fd, void *buffer, unsigned32 count);
+int __rtems_write(int fd, const void *buffer, unsigned32 count);
+int __rtems_ioctl(int fd, unsigned32  command, void *buffer);
+int __rtems_lseek(int fd, rtems_libio_offset_t offset, int whence);
+int __rtems_fstat(int _fd, struct stat* _sbuf);
+
+/*
+ * External I/O handlers
+ */
+typedef struct {
+    int (*open)(const char  *pathname, unsigned32 flag, unsigned32 mode);
+    int (*close)(int  fd);
+    int (*read)(int fd, void *buffer, unsigned32 count);
+    int (*write)(int fd, const void *buffer, unsigned32 count);
+    int (*ioctl)(int fd, unsigned32  command, void *buffer);
+    int (*lseek)(int fd, rtems_libio_offset_t offset, int whence);
+} rtems_libio_handler_t;
+
+void rtems_register_libio_handler(int handler_flag,
+                                 const rtems_libio_handler_t *handler);
+
+#define RTEMS_FILE_DESCRIPTOR_TYPE_FILE         0x0000
+#define RTEMS_FILE_DESCRIPTOR_TYPE_SOCKET       0x1000
+#define rtems_make_file_descriptor(fd,flags)    ((fd)|(flags))
+#define rtems_file_descriptor_base(fd)          ((fd) & 0x0FFF)
+#define rtems_file_descriptor_type(fd)          ((fd) & 0xF000)
+#define rtems_file_descriptor_type_index(fd)    ((((fd) & 0xF000) >> 12) - 1)
+
+/*
+ *  IOCTL values
+ */
+
+#define       RTEMS_IO_GET_ATTRIBUTES 1
+#define       RTEMS_IO_SET_ATTRIBUTES 2
+#define       RTEMS_IO_TCDRAIN        3
+
+/*
+ * Callbacks from TERMIOS routines to device-dependent code
+ */
+#include <termios.h>
+typedef struct rtems_termios_callbacks {
+  int       (*firstOpen)(int major, int minor, void *arg);
+  int       (*lastClose)(int major, int minor, void *arg);
+  int       (*pollRead)(int minor);
+  int       (*write)(int minor, const char *buf, int len);
+  int       (*setAttributes)(int minor, const struct termios *t);
+  int       (*stopRemoteTx)(int minor);
+  int       (*startRemoteTx)(int minor);
+  int       outputUsesInterrupts;
+} rtems_termios_callbacks;
+
+/*
+ * Device-independent TERMIOS routines
+ */
+void rtems_termios_initialize (void);
+rtems_status_code rtems_termios_open (
+  rtems_device_major_number      major,
+  rtems_device_minor_number      minor,
+  void                          *arg,
+  const rtems_termios_callbacks *callbacks
+  );
+rtems_status_code rtems_termios_close (void *arg);
+rtems_status_code rtems_termios_read (void *arg);
+rtems_status_code rtems_termios_write (void *arg);
+rtems_status_code rtems_termios_ioctl (void *arg);
+int rtems_termios_enqueue_raw_characters (void *ttyp, char *buf, int len);
+int rtems_termios_dequeue_characters (void *ttyp, int len);
+void rtems_termios_reserve_resources(
+  rtems_configuration_table *configuration,
+  rtems_unsigned32           number_of_devices
+);
 
 #endif /* _RTEMS_LIBIO_H */

@@ -27,9 +27,11 @@
  *  Indicate we are in an assembly file and get the basic CPU definitions.
  */
 
+#ifndef ASM
 #define ASM
+#endif
 
-#include <rtems/score/sparc.h>
+#include <rtems/score/targopts.h>
 #include <rtems/score/cpu.h>
 
 /*
@@ -101,6 +103,16 @@
  
 #define TRAP(_vector, _handler)  \
   mov   %psr, %l0 ; \
+  sethi %hi(_handler), %l4 ; \
+  jmp   %l4+%lo(_handler); \
+  mov   _vector, %l3
+
+/*
+ *  Used for the reset trap for ERC32 to avoid a supervisor instruction
+ */
+ 
+#define RTRAP(_vector, _handler)  \
+  mov   %g0, %l0 ; \
   sethi %hi(_handler), %l4 ; \
   jmp   %l4+%lo(_handler); \
   mov   _vector, %l3

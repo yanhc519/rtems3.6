@@ -3,9 +3,7 @@
 #
 
 #
-# This package requires a version of GCC that has been modified
-# to support the `-mcpu32' argument.  I have submitted the required
-# changes to the GCC maintainers.
+# This package requires a version of GCC that supports the `-mcpu32' option.
 #
 
 #
@@ -19,10 +17,37 @@
 # eric@skatter.usask.ca
 #
 
-BSP NAME:	    gen68360
-BOARD:              home-built
+#
+# This board support package works with several different versions of
+# MC68360 systems.  See the conditional-compile tests in startup/init68360.c
+# for examples.
+#
+# Decisions made at compile time include:
+#	- If the CPU is a member of the 68040 family, the BSP is
+#	  compiled for a generic 68040/68360 system as described
+#	  in Chapter 9 of the MC68360 User's Manual.  This version
+#	  can be used with the Arnewsh SBC360 card.
+#	- If the preprocessor symbol M68360_ATLAS_HSB is defined,
+#	  the BSP is compiled for an Atlas HSB card.
+#	- Otherwise, the BSP is compiled for a generic 68360 system
+#	  as described in Chapter 9 of the MC68360 User's Manual.  This
+#	  version works with the Atlas ACE360 card.
+#
+# Decisions to be made a link-edit time are:
+#     - The size of the memory allocator heap.  The default value is
+#       64 kbytes.  If the network package is used the heap
+#       should be at least 256 kbytes.  If your network is large, or
+#       busy, the heap should be even larger.
+#       To choose a heap size of 256 kbytes,
+#	CFLAGS_LD += -Wl,--defsym -Wl,HeapSize=0x40000
+
+BSP NAME:	    gen68360 or gen68360_040
+BOARD:              Generic 68360 as described in Motorola MC68360 User's Manual
+BOARD:              Atlas Computer Equipment Inc. High Speed Bridge (HSB)
+BOARD:              Atlas Computer Equipment Inc. Advanced Communication Engine (ACE)
+BOARD:              Arnewsh SBC360 68040/68360 card
 BUS:                none
-CPU FAMILY:         Motorola CPU32+
+CPU FAMILY:         Motorola CPU32+, Motorola 68040
 COPROCESSORS:       none
 MODE:               not applicable
 
@@ -63,16 +88,14 @@ Board description
 clock rate:	25 MHz
 bus width:	8-bit PROM, 32-bit DRAM
 ROM:		To 1 MByte, 180 nsec (3 wait states), chip select 0
-RAM:		4 MByte DRAM SIMM, 60 nsec (0 wait states), parity
+RAM:		4 or 16 MBytes of 60 nsec parity DRAM (1Mx36) to RAS1*/CAS1*
 
 Host System
 -----------
-NEXTSTEP 3.3 (Intel and Motorola), Solaris 2.5
-gcc-2.7.2
-binutils-2.6
+OPENSTEP 4.2 (Intel and Motorola), Solaris 2.5, Linux 2.0.29
 
-Verification
-------------
+Verification (Standalone 68360)
+-------------------------------
 Single processor tests:  Passed
 Multi-processort tests:  not applicable
 Timing tests:
@@ -248,20 +271,31 @@ Timing tests:
 	rtems_rate_monotonic_period: initiate period -- returns to caller 58
 	rtems_rate_monotonic_period: conclude periods -- caller blocks 75
 
+Network tests:
+       TCP throughput (as measured by ttcp):
+               Receive: 1081 kbytes/sec
+               Transmit: 953 kbytes/sec
+
 Porting
 -------
 This board support package is written for a 68360 system similar to that
 described in chapter 9 of the Motorola MC68360 Quad Integrated Communication
-Processor Users' Manual.  The salient details of this hardware are:
+Processor Users' Manual.  The salient features of this hardware are:
 
 	25 MHz external clock
 	DRAM address multiplexing provided by 68360
 	8-bit 180nsec PROM to CS0*
 	4 MBytes of 60 nsec parity DRAM (1Mx36) to RAS1*/CAS1*
 	Console serial port on SMC1
+	Ethernet interface on SCC1
 
-The board support package has been tested with a home-built board and with an
-ACE360A board produced by:
-	Atlas Computer Equipment
-	703 Colina Lane
-	Santa Barbara, CA 93103
+The board support package has been tested with:
+	A home-built 68360 board
+	An ACE360A and an HSB board produced by:
+		Atlas Computer Equipment
+		703 Colina Lane
+		Santa Barbara, CA 93103
+	A 68040/68360 board (SBC360) produced by:
+		Arnewsh Inc.
+		P.O. Box 270352
+		Fort Collins, CO 80527-0352

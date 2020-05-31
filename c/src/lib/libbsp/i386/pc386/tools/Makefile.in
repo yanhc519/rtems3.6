@@ -1,0 +1,75 @@
+#
+# $Id$
+#
+
+@SET_MAKE@
+srcdir = @srcdir@
+VPATH = @srcdir@
+RTEMS_ROOT = @top_srcdir@
+PROJECT_ROOT = @PROJECT_ROOT@
+exec_prefix = @exec_prefix@
+bindir = @bindir@
+libdir = @libdir@
+includedir = @includedir@
+manext = 1
+mandir = @mandir@/man$(manext)
+
+
+VPATH=@srcdir@
+
+
+# we use host compiler in this directory
+USE_HOST_COMPILER=yes
+
+# C source names, if any, go here -- minus the .c
+C_PIECES= bin2boot binpatch
+C_FILES=$(C_PIECES:%=%.c)
+C_O_FILES=$(C_PIECES:%=$(ARCH)/%.o)
+
+CC_PIECES=
+CC_FILES=$(CC_PIECES:%=%.cc)
+CC_O_FILES=$(CC_PIECES:%=$(ARCH)/%.o)
+
+H_FILES=
+
+SRCS=$(C_FILES) $(CC_FILES) $(H_FILES)
+OBJS=$(C_O_FILES) $(CC_O_FILES) $(S_O_FILES)
+
+PGMS=$(ARCH)/bin2boot $(ARCH)/binpatch
+
+include $(RTEMS_ROOT)/make/custom/$(RTEMS_BSP).cfg
+include $(RTEMS_ROOT)/make/leaf.cfg
+
+#
+# (OPTIONAL) Add local stuff here using +=
+#
+
+DEFINES  +=
+CPPFLAGS +=
+CFLAGS   += -g -Wall
+CXXFLAGS +=
+
+LD_PATHS  +=
+LD_LIBS   +=
+LDFLAGS   += -g
+
+#
+# Add your list of files to delete here.  The config files
+#  already know how to delete some stuff, so you may want
+#  to just run 'make clean' first to see what gets missed.
+#  'make clobber' already includes 'make clean'
+#
+
+CLEAN_ADDITIONS += $(HOST_ARCH)
+CLOBBER_ADDITIONS +=
+
+all:	$(ARCH) $(SRCS) $(PGMS)
+	$(INSTALL) -m 555 $(PGMS) ${PROJECT_RELEASE}/build-tools
+
+$(ARCH)/bin2boot: $(srcdir)/bin2boot.c
+	$(CC) $(LDFLAGS) -o $@ $(srcdir)/bin2boot.c $(LD_LIBS)
+
+$(ARCH)/binpatch: $(srcdir)/binpatch.c
+	$(CC) $(LDFLAGS) -o $@ $(srcdir)/binpatch.c $(LD_LIBS)
+
+

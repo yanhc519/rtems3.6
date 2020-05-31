@@ -3,13 +3,13 @@
  *  This include file contains information pertaining to the Intel
  *  i960 processor family.
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -22,28 +22,6 @@ extern "C" {
 #endif
 
 /*
- *  The following define the CPU Family and Model within the family
- *
- *  NOTE: The string "REPLACE_THIS_WITH_THE_CPU_MODEL" is replaced
- *        with the name of the appropriate macro for this target CPU.
- */
- 
-#ifdef i960
-#undef i960
-#endif
-#define i960
-
-#ifdef REPLACE_THIS_WITH_THE_CPU_MODEL
-#undef REPLACE_THIS_WITH_THE_CPU_MODEL
-#endif
-#define REPLACE_THIS_WITH_THE_CPU_MODEL
-
-#ifdef REPLACE_THIS_WITH_THE_BSP
-#undef REPLACE_THIS_WITH_THE_BSP
-#endif
-#define REPLACE_THIS_WITH_THE_BSP
-
-/*
  *  This file contains the information required to build
  *  RTEMS for a particular member of the Intel i960
  *  family.  It does this by setting variables to indicate
@@ -54,7 +32,7 @@ extern "C" {
  *        to put in at least support for FPU.
  */
 
-#if defined(i960ca)
+#if defined(__i960CA__)
 
 #define CPU_MODEL_NAME  "i960ca"
 #define I960_HAS_FPU 0
@@ -78,7 +56,7 @@ extern "C" {
  * XXX    family members...
  */
  
-#if defined(__i960CA__) || defined(__i960_CA__) || defined(__i960CA)
+#if defined(__i960CA__)
  
 /* i960CA control structures */
  
@@ -276,6 +254,9 @@ static inline unsigned int CPU_swap_u32(
                );
   return( swapped );
 }
+
+#define CPU_swap_u16( value ) \
+  (((value&0xff) << 8) | ((value >> 8)&0xff))
 
 #ifdef __cplusplus
 }

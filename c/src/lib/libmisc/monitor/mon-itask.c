@@ -6,7 +6,7 @@
 
 #define __RTEMS_VIOLATE_KERNEL_VISIBILITY__
 #include <rtems.h>
-#include "monitor.h"
+#include <rtems/monitor.h>
 
 #include <stdio.h>
 
@@ -40,7 +40,7 @@ rtems_monitor_init_task_next(
 {
     rtems_configuration_table *c = _Configuration_Table;
     rtems_initialization_tasks_table *itask;
-    int n = rtems_get_index(*next_id);
+    rtems_unsigned32 n = rtems_get_index(*next_id);
 
     if (n >= c->RTEMS_api_configuration->number_of_initialization_tasks)
         goto failed;

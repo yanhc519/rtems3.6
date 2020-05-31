@@ -2,13 +2,13 @@
  *
  *  This include file contains all DMV152 board IO definitions.
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -25,8 +25,8 @@ extern "C" {
 #include <clockdrv.h>
 #include <iosupp.h>
 #include <vmeintr.h>
-#include <z8530.h>
-#include <z8536.h>
+#include <zilog/z8530.h>
+#include <zilog/z8536.h>
 
 /*
  *  Define the time limits for RTEMS Test Suite test durations.
@@ -124,29 +124,17 @@ extern "C" {
 #define RAM_START 0
 #define RAM_END   0x100000
 
-#define USE_CHANNEL_A   0                /* 1 = use channel A for console */
-#define USE_CHANNEL_B   1                /* 1 = use channel B for console */
-
 #define TIMER 0x0c000000
 #define TIMER_VECTOR 0x4D
 
-#if (USE_CHANNEL_A == 1)
-#define CONSOLE_CONTROL  0x0C800005
-#define CONSOLE_DATA     0x0C800007
-#elif (USE_CHANNEL_B == 1)
-#define CONSOLE_CONTROL  0x0C800001
-#define CONSOLE_DATA     0x0C800003
-#endif
+#define CONSOLE_CONTROL_A  0x0C800005
+#define CONSOLE_DATA_A     0x0C800007
+#define CONSOLE_CONTROL_B  0x0C800001
+#define CONSOLE_DATA_B     0x0C800003
 
 /* Structures */
 
-#ifdef D152_INIT
-#undef EXTERN
-#define EXTERN
-#else
-#undef EXTERN
-#define EXTERN extern
-#endif
+   /* none */
 
 /* miscellaneous stuff assumed to exist */
 
@@ -165,12 +153,6 @@ extern m68k_isr_entry M68Kvec[];   /* vector table address */
 /*
  * NOTE: Use the standard Clock driver entry
  */
-
-/*
- * How many libio files we want
- */
-
-#define BSP_LIBIO_MAX_FDS       20
 
 /* functions */
 

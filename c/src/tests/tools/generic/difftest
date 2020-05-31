@@ -1,6 +1,6 @@
 #!KSHELL -p
 #
-#  Check test results against official output in the src tree
+#  Check test results against official output from the src tree
 #
 #  $Id$
 #
@@ -65,12 +65,14 @@ args=$*
 # Run the tests
 #
 
-cd $RTEMS_HOME/tests/$logdir || fatal "No log directory: $RTEMS_HOME/tests/$logdir"
+test -d $logdir || fatal "No log directory: ./$logdir"
 
 tests="$args"
 if [ ! "$tests" ]
 then
-     set -- `echo sp?? mp??_?`
+     cd $logdir
+     set -- `echo sp?? mp??_? psx?? sp??_g mp??_?_g psx??_g`
+     cd ..
      tests="$*"
 fi
 
@@ -78,7 +80,7 @@ for t in $tests
 do
    logfile=$t
 
-   if [ ! -f $logfile ]
+   if [ ! -f $logdir/$logfile ]
    then
         continue
    fi
@@ -90,14 +92,17 @@ do
        mp*)
            mptest=`echo $t | sed 's/_.//'`
            node=`echo $t | sed 's/...._//'`
-           scn_file=$RTEMS_ROOT/c/src/tests/mptests/$mptest/node$node/$mptest.scn;;
+           tmp_scn_file=mptests/node$node/$mptest.scn;;
        sp*)
-           scn_file=$RTEMS_ROOT/c/src/tests/sptests/$t/$t.scn;;
+           tmp_scn_file=sptests/$t.scn;;
+       psx*)
+           tmp_scn_file=psxtests/$t.scn;;
        *)
            fatal "unknown test $t";;
    esac
 
-   sed -e '/^$/d' < $logfile | diff -b $scn_file -
+   scn_file=`echo $tmp_scn_file | sed -e s/_g//`
+   sed -e '/^$/d' < $logdir/$logfile | diff -b screens/$scn_file -
    echo
    echo
 done

@@ -1,13 +1,13 @@
 /*
  *  This file contains the efi68k console IO package.
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -194,14 +194,8 @@ void _UART_flush(void) {
  *  Return values:
  */
  
-rtems_device_driver console_initialize(
-  rtems_device_major_number  major,
-  rtems_device_minor_number  minor,
-  void                      *arg
-)
+void console_init()
 {
-  rtems_status_code status;
-
   /* set clock divisor */
   *LCR = (char)(DLAB);
   *DLL = (char)((int)(CLK_FREQ/BAUD/16.0+0.5) & 0xFF);
@@ -223,6 +217,15 @@ rtems_device_driver console_initialize(
   _tx_stop = ( (*MDSR & CTS) ? 0 : 1);
 
   set_vector(_catchUARTint, UART_ISR_LEVEL+24, 0);
+}
+
+rtems_device_driver console_initialize(
+  rtems_device_major_number  major,
+  rtems_device_minor_number  minor,
+  void                      *arg
+)
+{
+  rtems_status_code status;
 
   status = rtems_io_register_name(
     "/dev/console",
@@ -309,7 +312,6 @@ rtems_device_driver console_read(
     buffer[ count ] = inbyte();
     if (buffer[ count ] == '\n' || buffer[ count ] == '\r') {
       buffer[ count++ ]  = '\n';
-      buffer[ count ]  = 0;
       break;
     }
   }

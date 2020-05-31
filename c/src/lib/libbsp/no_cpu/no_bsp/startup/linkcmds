@@ -1,14 +1,14 @@
 /*
  *  This file contains directives for the GNU linker which are specific
- *  to the FORCE CPU386 board.
+ *  to the NO_CPU NO_BSP BOARD.
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -25,6 +25,24 @@ SECTIONS
 	text_start = . ;
 	_text_start = . ;
         *(.text)
+	. = ALIGN (16);
+
+	*(.eh_fram)
+	. = ALIGN (16);
+
+	/*
+	 * C++ constructors
+	 */
+	__CTOR_LIST__ = .;
+	LONG((__CTOR_END__ - __CTOR_LIST__) / 4 - 2)
+	*(.ctors)
+	LONG(0)
+	__CTOR_END__ = .;
+	__DTOR_LIST__ = .;
+	LONG((__DTOR_END__ - __DTOR_LIST__) / 4 - 2)
+	*(.dtors)
+	LONG(0)
+	__DTOR_END__ = .;
 	_etext = ALIGN( 0x10 ) ;
         }
         .data ADDR( .text ) + SIZEOF( .text ):

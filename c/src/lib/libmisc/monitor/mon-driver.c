@@ -22,7 +22,7 @@
 #define __RTEMS_VIOLATE_KERNEL_VISIBILITY__
 #include <rtems.h>
 
-#include "monitor.h"
+#include <rtems/monitor.h>
 
 #include <stdio.h>
 #include <stdlib.h>             /* strtoul() */
@@ -63,7 +63,7 @@ rtems_monitor_driver_next(
 )
 {
     rtems_configuration_table *c = _Configuration_Table;
-    int n = rtems_get_index(*next_id);
+    rtems_unsigned32 n = rtems_get_index(*next_id);
 
     if (n >= c->number_of_device_drivers)
         goto failed;

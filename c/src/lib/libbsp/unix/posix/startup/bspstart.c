@@ -1,5 +1,4 @@
-/*  bsp_start()
- *
+/*
  *  This routine starts the application.  It includes application,
  *  board, and monitor specific initialization and configuration.
  *  The generic CPU dependent initialization has been performed
@@ -7,34 +6,30 @@
  *
  *  Called by RTEMS::RTEMS constructor in startup-ctor.cc
  *
- *  INPUT:  NONE
- *
- *  OUTPUT: NONE
- *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <fcntl.h>
+
+/* for sbrk prototype in linux */
+#if defined(__linux__)
+#define __USE_MISC
+#endif
 #include <unistd.h>
 
 #include <bsp.h>
 #include <libcsupport.h>
 
 #include <rtems/libio.h>
-
-#ifdef STACK_CHECKER_ON
-#include <stackchk.h>
-#endif
 
 extern rtems_configuration_table  Configuration;
 
@@ -68,32 +63,26 @@ char                       **rtems_argv;
 rtems_unsigned32 CPU_CLICKS_PER_TICK;
 
 /*
- *  Function:   bsp_libc_init
- *  Created:    94/12/6
+ *  Use the shared implementations of the following routines
+ */
+ 
+void bsp_postdriver_hook(void);
+void bsp_libc_init( void *, unsigned32, int );
+
+/*
+ *  Function:   bsp_pretasking_hook
+ *  Created:    95/03/10
  *
  *  Description:
- *      Initialize whatever libc we are using
- *      called from bsp_postdriver_hook
+ *      BSP pretasking hook.  Called just before drivers are initialized.
+ *      Used to setup libc and install any BSP extensions.
  *
- *
- *  Parameters:
- *      none
- *
- *  Returns:
- *      none.
- *
- *  Side Effects:
- *
- *
- *  Notes:
- *
- *  Deficiencies/ToDo:
- *
- *
+ *  NOTES:
+ *      Must not use libc (to do io) from here, since drivers are
+ *      not yet initialized.
  */
 
-void
-bsp_libc_init(void)
+void bsp_pretasking_hook(void)
 {
     void *heap_start;
 
@@ -104,59 +93,8 @@ bsp_libc_init(void)
  
     heap_start = 0;
 
-    RTEMS_Malloc_Initialize((void *)heap_start, Heap_size, 1024 * 1024);
+    bsp_libc_init((void *)heap_start, Heap_size, 1024 * 1024);
 
-    /*
-     *  Init the RTEMS libio facility to provide UNIX-like system
-     *  calls for use by newlib (ie: provide __open, __close, etc)
-     *  Uses malloc() to get area for the iops, so must be after malloc init
-     */
-
-    rtems_libio_init();
-
-    libc_init(1);
-}
-
-
-/*
- *  Function:   bsp_pretasking_hook
- *  Created:    95/03/10
- *
- *  Description:
- *      BSP pretasking hook.  Called just before drivers are initialized.
- *      Used to setup libc and install any BSP extensions.
- *
- *  Parameters:
- *      none
- *
- *  Returns:
- *      nada
- *
- *  Side Effects:
- *      installs a few extensions
- *
- *  Notes:
- *      Must not use libc (to do io) from here, since drivers are
- *      not yet initialized.
- *
- *  Deficiencies/ToDo:
- *
- *
- */
-
-void
-bsp_pretasking_hook(void)
-{
-    bsp_libc_init();
-
-#ifdef STACK_CHECKER_ON
-    /*
-     *  Initialize the stack bounds checker
-     *  We can either turn it on here or from the app.
-     */
-
-    Stack_check_Initialize();
-#endif
 
 #ifdef RTEMS_DEBUG
     rtems_debug_enable( RTEMS_DEBUG_ALL_MASK );
@@ -171,69 +109,26 @@ bsp_pretasking_hook(void)
 }
 
 /*
- * After drivers are setup, register some "filenames"
- * and open stdin, stdout, stderr files
- *
- * Newlib will automatically associate the files with these
- * (it hardcodes the numbers)
+ *  DO NOT Use the shared bsp_postdriver_hook() implementation 
  */
  
-void
-bsp_postdriver_hook(void)
+void bsp_postdriver_hook(void)
 {
-#if 0
-  int stdin_fd, stdout_fd, stderr_fd;
-  int error_code;
- 
-  error_code = 'S' << 24 | 'T' << 16;
- 
-  if ((stdin_fd = __open("/dev/console", O_RDONLY, 0)) == -1)
-    rtems_fatal_error_occurred( error_code | 'D' << 8 | '0' );
- 
-  if ((stdout_fd = __open("/dev/console", O_WRONLY, 0)) == -1)
-    rtems_fatal_error_occurred( error_code | 'D' << 8 | '1' );
- 
-  if ((stderr_fd = __open("/dev/console", O_WRONLY, 0)) == -1)
-    rtems_fatal_error_occurred( error_code | 'D' << 8 | '2' );
- 
-  if ((stdin_fd != 0) || (stdout_fd != 1) || (stderr_fd != 2))
-    rtems_fatal_error_occurred( error_code | 'I' << 8 | 'O' );
-#endif
+  return;
 }
 
 /*
- *  Function:   bsp_start
- *  Created:    94/12/6
+ *  bsp_start
  *
- *  Description:
- *      called by crt0 as our "main" equivalent
- *
- *
- *
- *  Parameters:
- *
- *
- *  Returns:
- *
- *
- *  Side Effects:
- *
- *
- *  Notes:
- *
- *
- *  Deficiencies/ToDo:
- *
- *
+ *  This routine does the bulk of the system initialization.
  */
 
-void
-bsp_start(void)
+void bsp_start(void)
 {
     unsigned32 workspace_ptr;
 
     /*
-     *  Copy the table
+     *  Copy the table (normally done in shared main).
      */
 
     BSP_Configuration = Configuration;
@@ -320,49 +215,21 @@ bsp_start(void)
     Cpu_table.extra_mpci_receive_server_stack = 0;
 
     /*
-     * Add 1 region for RTEMS Malloc
+     * Add 1 extension for MPCI_fatal
      */
 
-    BSP_Configuration.RTEMS_api_configuration->maximum_regions++;
+    if (BSP_Configuration.User_multiprocessing_table)
+        BSP_Configuration.maximum_extensions++;
 
-#ifdef RTEMS_NEWLIB
+    CPU_CLICKS_PER_TICK = 1;
+
     /*
-     * Add 1 extension for newlib libc
+     *  Start most of RTEMS
+     *  main() will start the rest
      */
 
-    BSP_Configuration.maximum_extensions++;
-#endif
-
-#ifdef STACK_CHECKER_ON
-  /*
-   * Add 1 extension for stack checker
-   */
-
-    BSP_Configuration.maximum_extensions++;
-#endif
-
-  /*
-   * Tell libio how many fd's we want and allow it to tweak config
-   */
-
-  rtems_libio_config(&BSP_Configuration, BSP_LIBIO_MAX_FDS);
-
-  /*
-   * Add 1 extension for MPCI_fatal
-   */
-
-  if (BSP_Configuration.User_multiprocessing_table)
-      BSP_Configuration.maximum_extensions++;
-
-  CPU_CLICKS_PER_TICK = 1;
-
-  /*
-   *  Start most of RTEMS
-   *  main() will start the rest
-   */
-
-  bsp_isr_level = rtems_initialize_executive_early(
-    &BSP_Configuration,
-    &Cpu_table
-  );
+    bsp_isr_level = rtems_initialize_executive_early(
+      &BSP_Configuration,
+      &Cpu_table
+    );
 }

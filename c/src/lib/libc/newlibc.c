@@ -1,18 +1,10 @@
-#if defined(RTEMS_NEWLIB)
 
 /*
  *  COPYRIGHT (c) 1994 by Division Incorporated
  *
- *  To anyone who acknowledges that this file is provided "AS IS"
- *  without any express or implied warranty:
- *      permission to use, copy, modify, and distribute this file
- *      for any purpose is hereby granted without fee, provided that
- *      the above copyright notice and this notice appears in all
- *      copies, and that the name of Division Incorporated not be
- *      used in advertising or publicity pertaining to distribution
- *      of the software without specific, written prior permission.
- *      Division Incorporated makes no representations about the
- *      suitability of this software for any purpose.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  Description:
  *      Implementation of hooks for the CYGNUS newlib libc
@@ -30,6 +22,8 @@
 
 #define __RTEMS_VIOLATE_KERNEL_VISIBILITY__
 #include <rtems.h>
+
+#if defined(RTEMS_NEWLIB)
 #include <libcsupport.h>
 #include <stdlib.h>             /* for free() */
 #include <string.h>             /* for memset() */
@@ -38,11 +32,6 @@
 #include <errno.h>
 
 /*
- *  NOTE: When using RTEMS fake stat, fstat, and isatty, all output
- *        is line buffered so this setvbuf is not necessary.  This
- *        setvbuf insures that we can redirect the output of a test
- *        on the UNIX simulator and it is in the same order as for a
- *        real target.
  *  NOTE:
  *        There is some problem with doing this on the hpux version
  *        of the UNIX simulator (symptom is printf core dumps), so
@@ -75,9 +64,19 @@ struct _reent    libc_global_reent = _REENT_INIT(libc_global_reent);
 extern void _wrapup_reent(struct _reent *);
 extern void _reclaim_reent(struct _reent *);
 
+#include <stdio.h>
+
 void
 libc_wrapup(void)
 {
+    /*
+     *  In case RTEMS is already down, don't do this.  It could be 
+     *  dangerous.
+     */
+
+    if (!_System_state_Is_up(_System_state_Get()))
+       return;
+
     _wrapup_reent(0);
     if (_REENT != &libc_global_reent)
     {
@@ -89,6 +88,16 @@ libc_wrapup(void)
 #endif
         _REENT = &libc_global_reent;
     }
+    
+    /*
+     * Try to drain output buffers.
+     *
+     * Should this be changed to do *all* file streams?
+     *	_fwalk (_REENT, fclose);
+     */
+    fclose (stdin);
+    fclose (stdout);
+    fclose (stderr);
 }
 
 
@@ -141,12 +150,6 @@ libc_start_hook(rtems_tcb *current_task,
 
 /*
  * Called for all user TASKS (system tasks are MPCI Receive Server and IDLE)
- *
- *  NOTE: When using RTEMS fake stat, fstat, and isatty, all output 
- *        is line buffered so this setvbuf is not necessary.  This
- *        setvbuf insures that we can redirect the output of a test
- *        on the UNIX simulator and it is in the same order as for a 
- *        real target.
  */
  
 #ifdef NEED_SETVBUF
@@ -346,12 +349,15 @@ int get_errno()
  *
  */
 
-#if !defined(RTEMS_UNIX) && !defined(__GO32__) && !defined(_AM29K)
+#include <stdio.h>
+
+/* #if !defined(RTEMS_UNIX) && !defined(__GO32__) && !defined(_AM29K) */
+#if !defined(RTEMS_UNIX) && !defined(_AM29K)
 void _exit(int status)
 {
+    libc_wrapup(); /* Why? XXX */
     rtems_shutdown_executive(status);
 }
-
 #else
 
 void exit(int status)
@@ -366,21 +372,21 @@ void exit(int status)
  *  These are directly supported (and completely correct) in the posix api.
  */
 
-#if !defined(RTEMS_POSIX_API)
 pid_t __getpid(void)
 {
-  return 0;
+  return getpid();
 }
-#endif
 
-#if !defined(RTEMS_POSIX_API) || defined(__GO32__)
+/* #if !defined(RTEMS_POSIX_API) || defined(__GO32__) */
+#if !defined(RTEMS_POSIX_API)
 pid_t getpid(void)
 {
-  return __getpid();
+  return (0);
 }
 #endif
 
-#if !defined(RTEMS_POSIX_API) || defined(__GO32__)
+/* #if !defined(RTEMS_POSIX_API) || defined(__GO32__) */
+#if !defined(RTEMS_POSIX_API)
 int kill( pid_t pid, int sig )
 {
   return 0;

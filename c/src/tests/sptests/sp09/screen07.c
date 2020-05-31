@@ -6,13 +6,13 @@
  *
  *  Output parameters:  NONE
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -111,6 +111,14 @@ void Screen7()
     "rtems_message_queue_ident with illegal name"
   );
   puts( "TA1 - rtems_message_queue_ident - RTEMS_INVALID_NAME" );
+
+  status = rtems_message_queue_get_number_pending( 100, &count );
+  fatal_directive_status(
+    status,
+    RTEMS_INVALID_ID,
+    "rtems_message_queue_get_number_pending with illegal id"
+  );
+  puts( "TA1 - rtems_message_queue_get_number_pending - RTEMS_INVALID_ID" );
 
   status = rtems_message_queue_flush( 100, &count );
   fatal_directive_status(

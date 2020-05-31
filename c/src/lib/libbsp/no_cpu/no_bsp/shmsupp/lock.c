@@ -6,13 +6,13 @@
  *  and deadlock when two tasks poll for the same lock.
  *  previous level.
  *
- *  COPYRIGHT (c) 1989, 1990, 1991, 1992, 1993, 1994.
+ *  COPYRIGHT (c) 1989-1998.
  *  On-Line Applications Research Corporation (OAR).
- *  All rights assigned to U.S. Government, 1994.
+ *  Copyright assigned to U.S. Government, 1994.
  *
- *  This material may be reproduced by or for the U.S. Government pursuant
- *  to the copyright license under the clause at DFARS 252.227-7013.  This
- *  notice must appear in all copies of this file and its derivatives.
+ *  The license and distribution terms for this file may be
+ *  found in the file LICENSE in this distribution or at
+ *  http://www.OARcorp.com/rtems/license.html.
  *
  *  $Id$
  */
@@ -46,7 +46,7 @@ void Shm_Lock(
 )
 {
   rtems_unsigned32 isr_level;
-  rtems_unsigned32 *lockptr = &lq_cb->lock;
+  rtems_unsigned32 *lockptr = (rtems_unsigned32 *) &lq_cb->lock;
   rtems_unsigned32 lock_value;
 
   lock_value = 0x80000000;
