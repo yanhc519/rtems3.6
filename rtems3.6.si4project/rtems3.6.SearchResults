@@ -1,0 +1,18 @@
+---- _Chain_Append Matches (17 in 13 files) ----
+_API_extensions_Add in apiext.c (c\src\exec\score\src) :   _Chain_Append( &_API_extensions_List, &the_extension->Node );
+pthread_cleanup_push in cancel.c (c\src\exec\posix\src) :   _Chain_Append( handler_stack, &handler->Node );
+chain.c (c\src\exec\score\src) line 123 :  *  _Chain_Append
+chain.c (c\src\exec\score\src) line 137 : void _Chain_Append(
+chain.h (c\src\exec\score\headers) line 144 :  *  _Chain_Append
+chain.h (c\src\exec\score\headers) line 154 : void _Chain_Append(
+_CORE_message_queue_Free_message_buffer in coremsg.inl (c\src\exec\score\inline) :   _Chain_Append( &the_message_queue->Inactive_messages, &the_message->Node );
+_CORE_message_queue_Append in coremsg.inl (c\src\exec\score\inline) :   _Chain_Append( &the_message_queue->Pending_messages, &the_message->Node );
+_Objects_Free in object.inl (c\src\exec\score\inline) :   _Chain_Append( &information->Inactive, &the_object->Node );
+_Objects_MP_Free_global_object in objectmp.inl (c\src\exec\score\inline) :   _Chain_Append(
+_Partition_Free_buffer in part.inl (c\src\exec\rtems\inline) :   _Chain_Append( &the_partition->Memory, the_buffer );
+_Partition_Free_buffer in part.inl (c\src\exec\rtems\macros) :   _Chain_Append( &(_the_partition)->Memory, (_the_buffer) )
+killinfo in psignal.c (c\src\exec\posix\src) :     _Chain_Append( &_POSIX_signals_Siginfo[ sig ], &psiginfo->Node );
+_Thread_MP_Allocate_proxy in threadmp.c (c\src\exec\score\src) :     _Chain_Append( &_Thread_MP_Active_proxies, &the_proxy->Active );
+_Thread_MP_Free_proxy in threadmp.inl (c\src\exec\score\inline) :   _Chain_Append( &_Thread_MP_Inactive_proxies, &the_thread->Object.Node );
+_User_extensions_Handler_initialization in userext.inl (c\src\exec\score\inline) :     _Chain_Append( &_User_extensions_List, &_User_extensions_Initial.Node );
+_User_extensions_Add_set in userext.inl (c\src\exec\score\inline) :   _Chain_Append( &_User_extensions_List, &the_extension->Node );
